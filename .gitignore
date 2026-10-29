@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+.npm/
+.amplify/
+amplify_outputs.json
+amplifyconfiguration.json
+.env*.local
+next-env.d.ts
+*.tsbuildinfo
+.DS_Store
+.next-check/
+
+# Archivos de trabajo locales
+/WhatsApp Image*

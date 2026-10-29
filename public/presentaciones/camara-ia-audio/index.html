@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cámara Inteligente de Detección Acústica — iDS-TCI903-FIV | Bramal</title>
+<style>
+:root{
+  --bg:#0b0f14;
+  --panel:#121922;
+  --panel2:#1a232d;
+  --panel3:#0e141b;
+  --text:#eef3f7;
+  --muted:#b7c5d2;
+  --muted2:#8b9bab;
+  --accent:#f2a93b;
+  --accent2:#ffcf7a;
+  --red:#e5484d;
+  --green:#3ecf8e;
+  --amber:#f2b84b;
+  --blue:#5aa9e6;
+  --line:#263140;
+  --line-soft:#1c2530;
+  --shadow:0 14px 40px rgba(0,0,0,.35);
+  --shadow-soft:0 6px 20px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0;padding:0;height:100%;width:100%;
+  background:
+    radial-gradient(1100px 620px at 88% -8%, rgba(242,169,59,.07), transparent 60%),
+    radial-gradient(900px 700px at -6% 108%, rgba(90,169,230,.05), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:"Segoe UI",Arial,Helvetica,sans-serif;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,p,ul,ol{margin:0;padding:0;}
+ul{list-style:none;}
+button{font-family:inherit;cursor:pointer;}
+img{-webkit-user-drag:none;user-select:none;}
+
+/* ===== LAYOUT ===== */
+#app{position:relative;width:100vw;height:100vh;overflow:hidden;}
+
+#sidebar{
+  position:fixed;top:0;left:0;height:100vh;width:280px;
+  background:var(--panel3);border-right:1px solid var(--line);
+  transform:translateX(-280px);transition:transform .25s ease;
+  z-index:500;display:flex;flex-direction:column;
+  padding:22px 0;
+}
+#sidebar.open{transform:translateX(0);}
+#sidebar .sb-title{
+  padding:0 22px 16px 22px;font-size:.8rem;letter-spacing:.12em;
+  color:var(--muted2);text-transform:uppercase;border-bottom:1px solid var(--line);margin-bottom:8px;
+}
+#sidebar .sb-list{overflow-y:auto;flex:1;}
+#sidebar .sb-item{
+  display:flex;gap:10px;align-items:baseline;padding:11px 22px;
+  color:var(--muted);font-size:1rem;border-left:3px solid transparent;
+  transition:background .15s, color .15s;
+}
+#sidebar .sb-item:hover{background:var(--panel2);color:var(--text);}
+#sidebar .sb-item .num{color:var(--muted2);font-variant-numeric:tabular-nums;font-size:.85rem;}
+#sidebar .sb-item.active{
+  color:var(--red);border-left-color:var(--red);background:rgba(229,72,77,.08);font-weight:600;
+}
+#sidebar .sb-item.active .num{color:var(--red);}
+
+#btnToggleSidebar{
+  position:fixed;top:18px;left:18px;z-index:600;
+  width:42px;height:42px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--text);font-size:1.1rem;
+  box-shadow:var(--shadow-soft);
+}
+#btnToggleSidebar:hover{background:var(--panel);border-color:var(--accent);}
+
+#brandMark{
+  position:fixed;top:20px;right:30px;z-index:600;
+  display:flex;align-items:center;
+  padding:9px 16px;border-radius:12px;
+  background:#fcfaf6;border:1px solid rgba(0,0,0,.06);
+  box-shadow:var(--shadow-soft);
+}
+#brandMark img{height:24px;width:auto;display:block;}
+body.demo-mode #brandMark{display:none;}
+
+.sb-brand{padding:0 22px 18px 22px;display:flex;align-items:center;}
+.sb-brand .sb-brand-plaque{
+  display:inline-flex;align-items:center;padding:10px 16px;border-radius:10px;
+  background:#fcfaf6;box-shadow:var(--shadow-soft);
+}
+.sb-brand img{height:26px;width:auto;}
+
+#slides{position:relative;width:100%;height:100%;}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  padding:58px 88px 46px;
+  overflow:hidden;
+  opacity:0;visibility:hidden;pointer-events:none;z-index:1;
+  transform:translateY(10px) scale(.994);
+  transition:opacity .4s cubic-bezier(.4,0,.2,1), transform .4s cubic-bezier(.4,0,.2,1), visibility 0s linear .4s;
+}
+.slide.active{
+  opacity:1;visibility:visible;pointer-events:auto;z-index:2;
+  transform:translateY(0) scale(1);
+  transition:opacity .4s cubic-bezier(.4,0,.2,1), transform .4s cubic-bezier(.4,0,.2,1);
+}
+.slide::before{
+  content:"";position:absolute;top:0;left:5%;right:5%;height:1px;
+  background:linear-gradient(90deg, var(--accent) 0%, transparent 46%);
+  opacity:.55;
+}
+#slide-0::before, body.demo-mode .slide::before{display:none;}
+.slide .eyebrow{
+  color:var(--accent);font-size:.88rem;letter-spacing:.16em;text-transform:uppercase;font-weight:700;margin-bottom:12px;
+  display:flex;align-items:center;gap:9px;
+}
+.slide .eyebrow::before{content:"";display:block;width:22px;height:2px;background:var(--accent);border-radius:2px;}
+.slide h1.slide-h1{
+  font-size:clamp(2rem,3.4vw,3.1rem);font-weight:800;letter-spacing:-.01em;margin-bottom:18px;color:var(--text);
+}
+.slide .slide-sub{color:var(--muted);font-size:1.15rem;max-width:900px;margin-bottom:28px;line-height:1.5;}
+.slide-body{flex:1;min-height:0;display:flex;gap:40px;}
+.equal-row{display:flex;gap:40px;width:100%;}
+.scrollable{overflow-y:auto;padding-right:8px;}
+.scrollable::-webkit-scrollbar{width:8px;}
+.scrollable::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;}
+
+.badge{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;
+  font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;line-height:1.4;
+}
+.badge-confirmed{background:rgba(62,207,142,.14);color:var(--green);border:1px solid rgba(62,207,142,.5);}
+.badge-observed{background:rgba(90,169,230,.14);color:var(--blue);border:1px solid rgba(90,169,230,.5);}
+.badge-tovalidate{background:rgba(242,184,75,.14);color:var(--amber);border:1px solid rgba(242,184,75,.5);}
+
+/* Generic content blocks */
+.card{
+  background:linear-gradient(180deg, var(--panel) 0%, var(--panel3) 100%);
+  border:1px solid var(--line);border-radius:14px;padding:22px 26px;
+  box-shadow:var(--shadow-soft);
+}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;}
+.bullet-list{display:flex;flex-direction:column;gap:12px;}
+.bullet-list li{
+  position:relative;padding-left:26px;
+  font-size:1.12rem;line-height:1.52;color:var(--text);
+}
+.bullet-list li .dot{
+  position:absolute;left:0;top:.6em;
+  width:9px;height:9px;border-radius:50%;background:var(--accent);
+}
+.cap-item{
+  display:flex;gap:14px;align-items:flex-start;padding:16px 18px;border-radius:12px;
+  background:var(--panel2);border:1px solid var(--line-soft);
+  box-shadow:0 2px 10px rgba(0,0,0,.18);
+}
+.cap-item .icon{
+  flex:0 0 42px;width:42px;height:42px;border-radius:11px;
+  background:rgba(242,169,59,.13);border:1px solid rgba(242,169,59,.22);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;line-height:1;
+}
+.cap-item .cap-text{font-size:1.04rem;line-height:1.45;padding-top:2px;}
+.cap-item .cap-text .t{font-weight:700;display:block;margin-bottom:4px;color:var(--text);}
+.cap-item .cap-text .d{color:var(--muted);font-size:.94rem;line-height:1.42;}
+
+.lightbox-trigger{cursor:zoom-in;}
+
+/* ===== SLIDE 01 PORTADA ===== */
+#slide-0{padding:0;justify-content:flex-end;}
+.cover-bg{
+  position:absolute;inset:0;
+  background-image:url('./Screen1.jpeg');
+  background-size:200% 200%;background-position:0% 100%;
+  filter:saturate(0.85) brightness(0.55);
+}
+.cover-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(100deg, rgba(11,15,20,.97) 0%, rgba(11,15,20,.88) 38%, rgba(11,15,20,.35) 78%, rgba(11,15,20,.15) 100%);
+}
+.cover-content{position:relative;z-index:2;padding:70px 90px;max-width:1150px;}
+.cover-logo-plaque{
+  display:inline-flex;align-items:center;padding:14px 22px;border-radius:12px;
+  background:#fcfaf6;box-shadow:var(--shadow);margin-bottom:30px;
+}
+.cover-logo-plaque img{height:38px;width:auto;display:block;}
+.cover-content .eyebrow-line{
+  color:var(--muted);font-weight:600;letter-spacing:.14em;font-size:.9rem;margin-bottom:14px;text-transform:uppercase;
+}
+.cover-content h1{font-size:clamp(2.3rem,4.2vw,3.8rem);font-weight:800;line-height:1.08;margin-bottom:18px;letter-spacing:-.01em;}
+.cover-content .model{color:var(--accent2);font-size:1.25rem;font-weight:600;margin-bottom:22px;}
+.cover-content .desc{color:var(--muted);font-size:1.15rem;max-width:820px;line-height:1.55;margin-bottom:30px;}
+.cover-tags{display:flex;gap:10px;flex-wrap:wrap;}
+
+/* ===== SLIDE 05 DEMOSTRACION ===== */
+#slide-4{padding:34px 54px;}
+.demo-layout{display:flex;gap:26px;flex:1;min-height:0;}
+.demo-video-col{flex:0 0 70%;max-width:70%;display:flex;flex-direction:column;min-height:0;}
+.demo-side-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px;min-height:0;}
+.video-stage{
+  position:relative;width:100%;flex:1;min-height:0;
+  background:#000;border-radius:14px;overflow:hidden;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:var(--shadow);
+}
+.video-zoom-wrap{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  transform-origin:center center;cursor:grab;
+}
+.video-zoom-wrap.zoomed{cursor:grab;}
+.video-zoom-wrap.dragging{cursor:grabbing;}
+#demoVideo{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;background:#000;}
+.video-fs-btn{
+  position:absolute;top:12px;right:12px;z-index:5;
+  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);color:#fff;
+  width:38px;height:38px;border-radius:8px;font-size:1rem;
+}
+.video-fs-btn:hover{background:rgba(0,0,0,.8);}
+
+.video-progress-row{display:flex;align-items:center;gap:12px;margin-top:12px;}
+.time-label{font-variant-numeric:tabular-nums;font-size:.88rem;color:var(--muted);white-space:nowrap;}
+.progress-track{
+  position:relative;flex:1;height:10px;background:var(--panel2);border-radius:6px;cursor:pointer;border:1px solid var(--line);
+}
+.progress-fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:var(--accent);border-radius:6px;}
+.progress-markers{position:absolute;inset:0;}
+.progress-marker-tick{position:absolute;top:-3px;width:2px;height:16px;background:var(--red);opacity:.75;}
+
+.video-controls{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+.ctrl-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.btn{
+  background:var(--panel2);border:1px solid var(--line);color:var(--text);
+  padding:8px 13px;border-radius:8px;font-size:.85rem;font-weight:600;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.btn:hover{background:#232f3b;border-color:var(--accent);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#1a1200;}
+.btn.primary:hover{background:var(--accent2);}
+.btn.on{background:rgba(62,207,142,.18);border-color:var(--green);color:var(--green);}
+.btn.danger-outline{border-color:var(--red);color:var(--red);}
+.btn.small{padding:6px 10px;font-size:.78rem;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.ctrl-sep{width:1px;align-self:stretch;background:var(--line);margin:2px 4px;}
+.ctrl-label{font-size:.72rem;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;margin-right:2px;}
+
+.markers-panel, .desc-panel{
+  background:linear-gradient(180deg, var(--panel) 0%, var(--panel3) 100%);
+  border:1px solid var(--line);border-radius:14px;padding:20px 22px;
+  box-shadow:var(--shadow-soft);
+}
+.markers-panel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
+.markers-panel h3, .desc-panel h3{
+  font-size:.84rem;letter-spacing:.12em;color:var(--accent);text-transform:uppercase;margin-bottom:12px;font-weight:800;
+}
+#markersList{display:flex;flex-direction:column;gap:7px;overflow-y:auto;}
+.marker-item{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:11px 13px;border-radius:9px;border:1px solid transparent;background:var(--panel2);
+  transition:all .15s;
+}
+.marker-item:hover{border-color:var(--accent);}
+.marker-item .m-left{display:flex;align-items:center;gap:10px;min-width:0;}
+.marker-item .m-dot{flex:0 0 auto;width:9px;height:9px;border-radius:50%;background:var(--muted2);}
+.marker-item .m-label{font-size:1rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.marker-item .m-time{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.92rem;flex:0 0 auto;}
+.marker-item.active{background:rgba(229,72,77,.14);border-color:var(--red);}
+.marker-item.active .m-dot{background:var(--red);box-shadow:0 0 0 4px rgba(229,72,77,.25);}
+.marker-item.active .m-label{color:var(--red);}
+.marker-item.active .m-time{color:var(--red);}
+
+.desc-panel{flex:0 0 auto;max-height:34%;overflow-y:auto;}
+#activeDescTitle{font-size:1.12rem;font-weight:700;margin-bottom:7px;color:var(--accent2);}
+#activeDesc{font-size:1.02rem;line-height:1.52;color:var(--text);}
+
+.demo-mode-buttons{display:flex;gap:10px;margin-top:12px;}
+
+body.demo-mode #sidebar{display:none;}
+body.demo-mode #btnToggleSidebar{display:none;}
+body.demo-mode .slide:not(#slide-4){display:none !important;}
+body.demo-mode #slide-4 .eyebrow,
+body.demo-mode #slide-4 .slide-h1{display:none;}
+body.demo-mode .demo-video-col{flex:0 0 78%;max-width:78%;}
+body.demo-mode #slide-4{padding:20px 30px;}
+
+.demo-layout.video-expanded .demo-video-col{flex:0 0 84%;max-width:84%;}
+.demo-layout.video-expanded .demo-side-col{flex:0 0 16%;max-width:16%;}
+.demo-layout.video-expanded .markers-panel h3,
+.demo-layout.video-expanded .desc-panel h3{font-size:.68rem;}
+.demo-layout.video-expanded .marker-item .m-label{font-size:.8rem;}
+
+/* ===== IMAGE PANELS / LIGHTBOX ===== */
+.img-frame{
+  border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#000;position:relative;
+  box-shadow:var(--shadow);
+}
+.plate-plaque{
+  display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;max-width:440px;
+  background:linear-gradient(180deg, var(--panel) 0%, var(--panel3) 100%);
+  border:1px solid var(--line);border-radius:16px;padding:30px 34px 26px;
+  box-shadow:var(--shadow);
+}
+.plate-plaque .plate-img-frame{
+  border-radius:8px;overflow:hidden;border:1px solid var(--line-soft);background:#000;
+  width:100%;box-shadow:0 6px 18px rgba(0,0,0,.4);
+}
+.plate-plaque .plate-img-frame img{width:100%;display:block;image-rendering:-webkit-optimize-contrast;}
+.plate-plaque .plate-number{
+  font-size:2rem;font-weight:800;letter-spacing:.08em;color:var(--accent2);
+  font-variant-numeric:tabular-nums;
+}
+.plate-plaque .plate-caption{font-size:.78rem;color:var(--muted2);letter-spacing:.08em;text-transform:uppercase;text-align:center;}
+.crop-box{
+  position:relative;width:100%;aspect-ratio:1.816/1;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:#000;
+  box-shadow:var(--shadow);
+}
+.crop-box .crop-img{
+  position:absolute;width:200%;height:200%;background-image:url('./Screen1.jpeg');background-size:100% 100%;background-repeat:no-repeat;
+}
+.crop-tl{background-position:0% 0%;}
+.crop-tl .crop-img{top:0;left:0;}
+.crop-tr .crop-img{top:0;left:-100%;}
+.crop-bl .crop-img{top:-100%;left:0;}
+.crop-br .crop-img{top:-100%;left:-100%;}
+
+#lightbox{
+  position:fixed;inset:0;background:rgba(4,6,9,.94);z-index:2000;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+}
+#lightbox[hidden]{display:none;}
+#lightbox img{max-width:92vw;max-height:86vh;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+#lightbox .lb-caption{color:var(--muted);margin-top:14px;font-size:.95rem;}
+#lightbox .lb-close{
+  position:absolute;top:24px;right:30px;width:46px;height:46px;border-radius:50%;
+  background:var(--panel2);border:1px solid var(--line);color:#fff;font-size:1.3rem;
+}
+
+/* ===== EVIDENCE ANNOTATIONS ===== */
+.evidence-wrap{position:relative;width:100%;}
+.evidence-wrap img{width:100%;display:block;border-radius:12px;border:1px solid var(--line);box-shadow:var(--shadow);}
+.annot{position:absolute;pointer-events:none;opacity:0;transition:opacity .2s;}
+.evidence-wrap.show-annotations .annot{opacity:1;}
+.annot-box{border:2px dashed var(--red);border-radius:4px;}
+.annot-dot{width:12px;height:12px;border-radius:50%;background:var(--red);box-shadow:0 0 0 5px rgba(229,72,77,.3);transform:translate(-50%,-50%);}
+.annot-tag{
+  position:absolute;background:var(--red);color:#fff;font-size:.74rem;font-weight:800;
+  padding:3px 9px;border-radius:5px;white-space:nowrap;letter-spacing:.02em;
+  transform:translate(-2px,-100%);top:-4px;left:0;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+.annot-tag.below{transform:translate(-2px,4px);top:100%;bottom:auto;}
+
+/* ===== CAPTURE MODAL ===== */
+#captureModal{
+  position:fixed;inset:0;background:rgba(4,6,9,.94);z-index:2100;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+}
+#captureModal[hidden]{display:none;}
+#captureModal img{max-width:88vw;max-height:80vh;border-radius:8px;border:2px solid var(--accent);}
+#captureModal .cap-hint{color:var(--muted);margin-top:12px;font-size:.9rem;}
+
+/* ===== PRESENTER PANEL ===== */
+#presenterPanel{
+  position:fixed;bottom:16px;right:16px;z-index:900;
+  background:rgba(10,14,19,.92);border:1px solid var(--line);border-radius:12px;
+  padding:14px 18px;font-size:.82rem;color:var(--muted);min-width:230px;
+  box-shadow:0 10px 30px rgba(0,0,0,.4);
+}
+#presenterPanel[hidden]{display:none;}
+#presenterPanel .p-row{display:flex;justify-content:space-between;gap:14px;padding:3px 0;}
+#presenterPanel .p-row b{color:var(--text);font-variant-numeric:tabular-nums;}
+#presenterPanel .p-label{color:var(--accent);text-transform:uppercase;font-size:.65rem;letter-spacing:.1em;font-weight:700;}
+
+/* ===== FOOTER PROGRESS ===== */
+#progressBar{position:fixed;left:0;bottom:0;height:3px;background:var(--accent);z-index:800;transition:width .2s;}
+#slideCounter{
+  position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+  font-size:.78rem;color:var(--muted2);letter-spacing:.05em;z-index:800;background:rgba(10,14,19,.6);
+  padding:4px 12px;border-radius:20px;
+}
+body.demo-mode #slideCounter, body.demo-mode #progressBar{display:none;}
+
+/* ===== TABLES ===== */
+table.meta-table{width:100%;border-collapse:collapse;font-size:1rem;}
+table.meta-table td{padding:11px 10px;border-bottom:1px solid var(--line-soft);line-height:1.4;}
+table.meta-table td:first-child{color:var(--muted);width:46%;}
+table.meta-table tr:last-child td{border-bottom:none;}
+
+.kicker-note{
+  font-size:.92rem;line-height:1.48;color:var(--text);border-left:3px solid var(--amber);padding:11px 16px;background:rgba(242,184,75,.07);border-radius:0 8px 8px 0;
+}
+.kicker-note.red{border-left-color:var(--red);background:rgba(229,72,77,.07);}
+
+.norm-card{
+  background:linear-gradient(180deg, var(--panel) 0%, var(--panel3) 100%);
+  border:1px solid var(--line);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow-soft);
+  display:flex;flex-direction:column;
+}
+.norm-card .norm-title{font-size:1.08rem;font-weight:700;margin-bottom:9px;line-height:1.32;}
+.norm-card .norm-body{color:var(--text);font-size:.98rem;line-height:1.52;margin-bottom:12px;flex:1;}
+.norm-card .norm-source{font-size:.8rem;color:var(--muted2);word-break:break-word;line-height:1.4;}
+.norm-card .norm-source a{color:var(--blue);text-decoration:none;}
+.norm-card .norm-source a:hover{text-decoration:underline;}
+
+.flow-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.flow-chip{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:.86rem;font-weight:600;white-space:nowrap;}
+.flow-chip.gap{background:transparent;border:1px dashed var(--red);color:var(--red);}
+.flow-arrow{color:var(--muted2);font-size:1.05rem;flex:0 0 auto;}
+
+.level-card{
+  background:linear-gradient(180deg, var(--panel) 0%, var(--panel3) 100%);
+  border:1px solid var(--line);border-left:5px solid var(--line);border-radius:14px;padding:20px 22px;
+  box-shadow:var(--shadow-soft);
+}
+.level-card.l1{border-left-color:var(--green);}
+.level-card.l2{border-left-color:var(--amber);}
+.level-card.l3{border-left-color:var(--red);}
+.level-card .level-title{font-weight:800;font-size:1.02rem;letter-spacing:.03em;margin-bottom:10px;}
+.level-card.l1 .level-title{color:var(--green);}
+.level-card.l2 .level-title{color:var(--amber);}
+.level-card.l3 .level-title{color:var(--red);}
+
+.quote-box{
+  background:linear-gradient(180deg, rgba(242,169,59,.1), rgba(242,169,59,.03));
+  border:1px solid rgba(242,169,59,.35);border-radius:14px;padding:20px 24px;
+  font-size:1.06rem;line-height:1.58;font-style:italic;color:var(--text);
+  box-shadow:var(--shadow-soft);
+}
+.sources-line{font-size:.8rem;color:var(--muted2);margin-top:10px;line-height:1.55;}
+
+.contact-card{
+  background:linear-gradient(180deg, var(--panel) 0%, var(--panel3) 100%);
+  border:1px solid var(--line);border-radius:14px;padding:28px 30px;
+  box-shadow:var(--shadow-soft);
+}
+.contact-card-plaque{
+  display:inline-flex;align-items:center;padding:10px 16px;border-radius:10px;
+  background:#fcfaf6;box-shadow:var(--shadow-soft);
+}
+.contact-card-plaque img{height:28px;width:auto;display:block;}
+.contact-row{
+  display:flex;align-items:center;gap:12px;padding:11px 0;
+  color:var(--text);font-size:1.06rem;
+}
+.contact-row + .contact-row{border-top:1px solid var(--line-soft);}
+.contact-icon{
+  flex:0 0 34px;width:34px;height:34px;border-radius:9px;
+  background:rgba(242,169,59,.13);border:1px solid rgba(242,169,59,.22);
+  display:flex;align-items:center;justify-content:center;font-size:.95rem;
+}
+
+/* Responsive safety (still avoids scroll at 1920x1080) */
+@media (max-height:800px){
+  .slide{padding:32px 48px;}
+  .slide h1.slide-h1{font-size:1.7rem;margin-bottom:10px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <button id="btnToggleSidebar" title="Índice (menú)">☰</button>
+  <div id="brandMark">
+    <img src="./bramal-logo.png" alt="Bramal">
+  </div>
+  <div id="sidebar">
+    <div class="sb-brand"><div class="sb-brand-plaque"><img src="./bramal-logo.png" alt="Bramal"></div></div>
+    <div class="sb-title">Índice de contenidos</div>
+    <div class="sb-list" id="sbList"></div>
+  </div>
+
+  <div id="slides">
+
+    <!-- 01 INTRODUCCION -->
+    <section class="slide active" id="slide-0" data-title="Introducción">
+      <div class="cover-bg"></div>
+      <div class="cover-overlay"></div>
+      <div class="cover-content">
+        <div class="cover-logo-plaque"><img src="./bramal-logo.png" alt="Bramal — Mejorando Ciudades"></div>
+        <div class="eyebrow-line">Bramal Tecnología, Ingeniería y Construcción</div>
+        <h1>Cámara Inteligente de Detección Acústica y Captura Vehicular</h1>
+        <div class="model">Modelo iDS-TCI903-FIV &nbsp;·&nbsp; Sonar-Assisted Whistle Detector <span style="color:var(--muted);font-weight:400;">(detector de eventos acústicos asistido por sonar)</span></div>
+        <p class="desc">Sistema inteligente de monitoreo y fiscalización de tránsito, orientado a la detección de eventos acústicos vehiculares —bocinas y ruido de motor / escape—, la identificación del vehículo asociado y la generación de evidencia audiovisual en tiempo real.</p>
+        <div class="cover-tags">
+          <span class="badge badge-confirmed">Whistle Detection (detección de bocina)</span>
+          <span class="badge badge-confirmed">LPR (reconocimiento de patente)</span>
+          <span class="badge badge-confirmed">Whistle Cloud (nube acústica)</span>
+          <span class="badge badge-observed">Demostración en video incluida</span>
+        </div>
+        <p style="margin-top:20px;color:var(--muted);font-size:.92rem;">* Este análisis y esta presentación pueden adaptarse a los requerimientos específicos de cada cliente.</p>
+      </div>
+    </section>
+
+    <!-- 02 PROBLEMA -->
+    <section class="slide" id="slide-1" data-title="Problema">
+      <div class="eyebrow">Contexto</div>
+      <h1 class="slide-h1">El ruido vehicular es difícil de fiscalizar</h1>
+      <p class="slide-sub">El uso indebido de bocinas es una de las principales fuentes de contaminación acústica urbana, pero su fiscalización manual depende de la presencia física de un inspector en el momento exacto del evento.</p>
+      <div class="slide-body" style="align-items:flex-start;">
+        <div class="equal-row">
+          <div class="card" style="flex:1;">
+            <ul class="bullet-list">
+              <li><span class="dot"></span>Los eventos de bocina son instantáneos y no dejan evidencia física posterior.</li>
+              <li><span class="dot"></span>La fiscalización tradicional requiere personal en terreno, en el momento preciso del hecho.</li>
+              <li><span class="dot"></span>Es difícil asociar de forma objetiva un sonido con el vehículo específico que lo originó, especialmente en vías de varios carriles.</li>
+              <li><span class="dot"></span>Sin evidencia audiovisual y de metadata, la gestión municipal carece de datos objetivos para tomar decisiones.</li>
+            </ul>
+          </div>
+          <div class="card" style="flex:1;display:flex;flex-direction:column;gap:14px;justify-content:center;">
+            <div class="kicker-note">Las especificaciones y capacidades citadas en esta presentación provienen de la Ficha Técnica del fabricante y de una demostración en video analizada cuadro a cuadro. Los aspectos no confirmados documentalmente se identifican explícitamente como "por validar".</div>
+            <div class="kicker-note">El uso de bocinas en zonas urbanas ya está regulado por la Ley N.º 18.290 — ver la siguiente diapositiva, "Marco normativo", para el detalle de la normativa vigente en Chile.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MARCO NORMATIVO (CHILE) -->
+    <section class="slide" id="slide-normativa" data-title="Marco normativo">
+      <div class="eyebrow">Contexto regulatorio — Chile</div>
+      <h1 class="slide-h1">Marco normativo</h1>
+      <p class="slide-sub">Regulación vigente sobre ruido vehicular en Chile, como contexto para dimensionar dónde aporta la solución hoy y dónde queda pendiente de evolución normativa.</p>
+      <div class="slide-body scrollable" style="flex-direction:column;gap:14px;">
+        <div class="grid-3">
+          <div class="norm-card">
+            <span class="badge badge-confirmed">Vigente</span>
+            <div class="norm-title" style="margin-top:10px;">Ley de Tránsito N.º 18.290, Art. 74 — Bocinas</div>
+            <div class="norm-body">Prohíbe en zonas urbanas el uso de aparatos sonoros de los vehículos, salvo excepciones: principalmente vehículos de emergencia en servicio urgente, o cuando sea estrictamente necesario para prevenir un accidente.</div>
+            <div class="norm-source">Fuente: Biblioteca del Congreso Nacional — <a href="https://www.bcn.cl/leychile/navegar?idNorma=1007469&idParte=8795150" target="_blank" rel="noopener">Ley de Tránsito, Art. 74</a></div>
+          </div>
+          <div class="norm-card">
+            <span class="badge badge-observed">Vigente — solo vehículos nuevos</span>
+            <div class="norm-title" style="margin-top:10px;">DS N.º 7/2015 (MMA) — Ruido de motor / escape</div>
+            <div class="norm-body">Norma de emisión de ruido para vehículos livianos, medianos y motocicletas <b>nuevos</b>. Aplica principalmente a vehículos cuya primera inscripción se solicita desde la entrada en vigencia de la norma.</div>
+            <div class="norm-source">Fuente: Biblioteca del Congreso Nacional — <a href="https://www.bcn.cl/leychile/navegar?idNorma=1219727" target="_blank" rel="noopener">DS N.º 7/2015</a></div>
+          </div>
+          <div class="norm-card">
+            <span class="badge badge-confirmed">Vigente</span>
+            <div class="norm-title" style="margin-top:10px;">Resolución N.º 30/1985 (MTT) — Escapes</div>
+            <div class="norm-body">Para vehículos de carga y locomoción colectiva, exige un silenciador eficiente que evite ruido excesivo o inusual.</div>
+            <div class="norm-source">Fuente: Biblioteca del Congreso Nacional — <a href="https://www.bcn.cl/leychile/navegar?idNorma=164050" target="_blank" rel="noopener">Resolución N.º 30/1985</a></div>
+          </div>
+        </div>
+
+        <div class="kicker-note red">Importante: el DS N.º 7 no debe presentarse como un sistema actualmente diseñado para fiscalización automática mediante cámaras acústicas de todos los vehículos en circulación. Su ámbito es la homologación de vehículos nuevos, no la fiscalización en calle.</div>
+
+        <div class="card">
+          <span class="badge badge-observed">Situación actual — 2026</span>
+          <p style="margin-top:10px;line-height:1.5;">El Ministerio del Medio Ambiente informó el 12 de agosto de 2026 que revisa el DS N.º 7 para incorporar mecanismos que permitan controlar el ruido de motocicletas <b>en circulación</b> — ámbito que hoy no está cubierto por la normativa vigente.</p>
+          <div class="flow-row">
+            <span class="flow-chip">Normativa actual</span><span class="flow-arrow">→</span>
+            <span class="flow-chip">Vehículos nuevos / homologación</span><span class="flow-arrow">→</span>
+            <span class="flow-chip gap">Brecha actual</span><span class="flow-arrow">→</span>
+            <span class="flow-chip">Vehículos ruidosos en circulación</span><span class="flow-arrow">→</span>
+            <span class="flow-chip">Revisión DS N.º 7</span><span class="flow-arrow">→</span>
+            <span class="flow-chip">Futuro mecanismo de control</span>
+          </div>
+          <div class="norm-source" style="margin-top:10px;">Fuente: Ministerio del Medio Ambiente — <a href="https://mma.gob.cl/medio-ambiente-revisa-norma-motos-con-escape-modificado-pueden-generar-hasta-1-000-mas-ruido/" target="_blank" rel="noopener">revisión DS N.º 7, agosto 2026</a></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPORTUNIDAD MUNICIPAL Y NIVELES DE IMPLEMENTACION -->
+    <section class="slide" id="slide-oportunidad" data-title="Oportunidad municipal">
+      <div class="eyebrow">Propuesta — no es una afirmación jurídica definitiva</div>
+      <h1 class="slide-h1">Oportunidad municipal y niveles de implementación</h1>
+      <div class="slide-body scrollable" style="flex-direction:column;gap:14px;">
+        <div class="card">
+          <p style="line-height:1.55;">Una municipalidad podría estudiar una ordenanza o programa comunal destinado a prevenir y controlar ruidos molestos asociados al tránsito vehicular, siempre dentro de sus competencias y sin reemplazar la normativa nacional de tránsito o de emisiones. Existen antecedentes de ordenanzas municipales chilenas que han regulado ruidos vehiculares, incluyendo escapes libres y uso de bocinas.</p>
+          <p style="line-height:1.55;margin-top:10px;">La definición de infracciones, límites de dB(A), procedimientos de medición y sanciones debe ser revisada por la Dirección Jurídica municipal y los organismos competentes.</p>
+        </div>
+        <div class="kicker-note red">No se afirma que una ordenanza municipal pueda crear automáticamente una "fotomulta por ruido".</div>
+
+        <div class="grid-3">
+          <div class="level-card l1">
+            <div class="level-title">NIVEL 1 — APLICACIÓN INMEDIATA</div>
+            <div class="flow-row" style="margin-top:0;">
+              <span class="flow-chip">Bocinazo / ruido de motor-escape</span><span class="flow-arrow">→</span>
+              <span class="flow-chip">Detección</span><span class="flow-arrow">→</span>
+              <span class="flow-chip">Localización</span><span class="flow-arrow">→</span>
+              <span class="flow-chip">Vehículo</span><span class="flow-arrow">→</span>
+              <span class="flow-chip">Patente</span><span class="flow-arrow">→</span>
+              <span class="flow-chip">Evidencia</span>
+            </div>
+            <p style="margin-top:12px;color:var(--muted);font-size:.92rem;line-height:1.5;">Confirmado por el fabricante (Whistle Detection + LPR) y observado directamente en la demostración para ambos tipos de evento: bocina y ruido de motor/escape.</p>
+          </div>
+          <div class="level-card l2">
+            <div class="level-title">NIVEL 2 — PILOTO</div>
+            <div class="flow-row" style="margin-top:0;">
+              <span class="flow-chip">Ruido de motor / escape en terreno</span><span class="flow-arrow">→</span>
+              <span class="flow-chip">Detección y localización</span><span class="flow-arrow">→</span>
+              <span class="flow-chip">Identificación del vehículo</span><span class="flow-arrow">→</span>
+              <span class="flow-chip">Evidencia</span><span class="flow-arrow">→</span>
+              <span class="flow-chip">Apoyo / focalización de fiscalización</span>
+            </div>
+            <p style="margin-top:12px;color:var(--muted);font-size:.92rem;line-height:1.5;">La detección ya fue demostrada; el piloto valida su consistencia en condiciones reales (tránsito, clima, distintos vehículos) y precisa el detalle fino de clasificación.</p>
+          </div>
+          <div class="level-card l3">
+            <div class="level-title">NIVEL 3 — FUTURO / POR VALIDAR</div>
+            <div class="flow-row" style="margin-top:0;">
+              <span class="flow-chip">Medición dB(A)</span><span class="flow-arrow">→</span>
+              <span class="flow-chip">Identificación automática</span><span class="flow-arrow">→</span>
+              <span class="flow-chip">Determinación de superación normativa</span><span class="flow-arrow">→</span>
+              <span class="flow-chip">Eventual fiscalización</span>
+            </div>
+            <p style="margin-top:12px;color:var(--muted);font-size:.92rem;line-height:1.5;">Requiere validación metrológica, procedimiento normativo y análisis jurídico. No disponible hoy.</p>
+          </div>
+        </div>
+
+        <div class="quote-box">"La oportunidad inmediata está en la detección y generación de evidencia asociada tanto a bocinazos como a ruido anormal de motor o escape — ambos ya demostrados por el equipo. El piloto permite validar esta capacidad en condiciones reales de terreno, anticipándose a la evolución de la regulación chilena sobre ruido de vehículos en circulación."</div>
+
+        <div class="sources-line">
+          Fuentes: Ley N.º 18.290; DS N.º 7/2015 MMA; Resolución N.º 30/1985 MTT; Ministerio del Medio Ambiente, revisión DS N.º 7, agosto 2026.<br>
+          No se afirma que la cámara Hikvision sea actualmente un instrumento certificado para fiscalización de dB(A). La detección y localización de ruido de motor/escape sí fue observada directamente en la demostración; lo no confirmado es si el equipo distingue la causa exacta (p. ej. un escape específicamente modificado) dentro de ese tipo de evento.
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 SOLUCION -->
+    <section class="slide" id="slide-2" data-title="Solución">
+      <div class="eyebrow">Propuesta</div>
+      <h1 class="slide-h1">Detección acústica asociada automáticamente al vehículo</h1>
+      <p class="slide-sub">La cámara combina un sensor de imagen de alta resolución con un módulo de análisis acústico: cuando detecta un evento acústico —bocina o ruido de motor / escape—, calcula su origen dentro de la escena y lo asocia visualmente al vehículo correspondiente, generando evidencia en video, imagen y metadata.</p>
+      <div class="slide-body">
+        <div class="grid-3" style="flex:1;">
+          <div class="cap-item"><div class="icon">🎯</div><div class="cap-text"><span class="t">Detección (Whistle Detection — detección de bocina / eventos acústicos)</span><span class="d">Identifica el evento acústico vehicular (bocina, ruido de motor o de escape) mediante análisis de audio en tiempo real.</span></div></div>
+          <div class="cap-item"><div class="icon">📍</div><div class="cap-text"><span class="t">Localización acústica</span><span class="d">Calcula la posición aproximada del origen del sonido dentro de la escena (Whistle Cloud — nube acústica).</span></div></div>
+          <div class="cap-item"><div class="icon">🚗</div><div class="cap-text"><span class="t">Asociación al vehículo</span><span class="d">Vincula la localización acústica con el vehículo presente en esa posición de la vía.</span></div></div>
+          <div class="cap-item"><div class="icon">🔎</div><div class="cap-text"><span class="t">Lectura de patente (LPR — Reconocimiento Automático de Patentes)</span><span class="d">Reconoce automáticamente la placa patente del vehículo identificado.</span></div></div>
+          <div class="cap-item"><div class="icon">🗂️</div><div class="cap-text"><span class="t">Evidencia</span><span class="d">Genera video, imagen y metadata asociada al evento (hora, patente, carril, etc.).</span></div></div>
+          <div class="cap-item"><div class="icon">🔗</div><div class="cap-text"><span class="t">Integración</span><span class="d">ONVIF (estándar abierto de video IP), ISAPI (API propietaria del fabricante) y SDK (kit de desarrollo de software) para conectar con plataformas de gestión de tránsito.</span></div></div>
+        </div>
+      </div>
+      <div class="kicker-note" style="margin-top:14px;">Este esquema es general; el alcance exacto (qué tipos de evento priorizar, qué integraciones activar) puede adaptarse a los requerimientos específicos del cliente.</div>
+    </section>
+
+    <!-- 04 LOCALIZACION ACUSTICA -->
+    <section class="slide" id="slide-3" data-title="Localización acústica">
+      <div class="eyebrow">Whistle Cloud (nube acústica)</div>
+      <h1 class="slide-h1">Localización acústica del evento</h1>
+      <p class="slide-sub">El sistema representa el origen calculado del sonido como una nube de color superpuesta sobre la escena ("Whistle Cloud", nube acústica). Esta imagen corresponde a un recorte real de la evidencia generada durante la demostración.</p>
+      <div class="slide-body">
+        <div style="flex:0 0 46%;">
+          <div class="crop-box crop-tl lightbox-trigger" onclick="openLightbox('./Screen1.jpeg','Nube acústica (Whistle Cloud) sobre el vehículo detectado — recorte de la evidencia real generada por el sistema.')">
+            <div class="crop-img"></div>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:16px;">
+          <div class="card">
+            <span class="badge badge-confirmed">Confirmado por fabricante</span>
+            <ul class="bullet-list" style="margin-top:14px;">
+              <li><span class="dot"></span>Detección de bocinas (whistle detection) mediante análisis acústico.</li>
+              <li><span class="dot"></span>Posicionamiento del vehículo que genera el evento en la vía.</li>
+              <li><span class="dot"></span>Visualización de coordenadas del evento detectado.</li>
+              <li><span class="dot"></span>Monitoreo simultáneo de hasta 3 pistas de tránsito.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <span class="badge badge-observed">Observado en esta demostración</span>
+            <p style="margin-top:12px;line-height:1.5;">La evidencia generada en este caso clasifica el evento como <b>"Roar"</b> (no como "Whistle"), lo que en este contexto corresponde a <b>ruido de motor o de escape</b> —incluyendo posibles bramadores o modificaciones al sistema de recirculación de gases (EGR)— que hace que el vehículo emita ruido por sobre lo permitido. Es decir, el mismo mecanismo de nube acústica se usa aquí para localizar un evento de ruido de motor/escape, no una bocina.</p>
+          </div>
+          <div class="kicker-note">En la demostración en video (siguiente diapositiva) este indicador se observa activándose sobre la parte trasera del vehículo, en dos oportunidades, mientras el vehículo transita frente a la cámara.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 DEMOSTRACION -->
+    <section class="slide" id="slide-4" data-title="Demostración del sistema">
+      <div class="eyebrow">En vivo</div>
+      <h1 class="slide-h1">DEMOSTRACIÓN DEL SISTEMA</h1>
+      <div class="demo-layout" id="demoLayout">
+        <div class="demo-video-col" id="demoVideoCol">
+          <div class="video-stage" id="videoStage">
+            <div class="video-zoom-wrap" id="videoZoomWrap">
+              <video id="demoVideo" preload="metadata" playsinline>
+                <source src="./Video.mp4" type="video/mp4">
+              </video>
+            </div>
+            <button class="video-fs-btn" id="btnVideoFullscreen" title="Pantalla completa del navegador">🖥</button>
+          </div>
+
+          <div class="video-progress-row">
+            <span class="time-label" id="timeLabel">00:00 / 00:00</span>
+            <div class="progress-track" id="progressTrack">
+              <div class="progress-fill" id="progressFill"></div>
+              <div class="progress-markers" id="progressMarkers"></div>
+            </div>
+          </div>
+
+          <div class="video-controls">
+            <div class="ctrl-row">
+              <button class="btn primary" id="btnPlay" title="Reproducir / Pausar (Espacio)">▶ Reproducir</button>
+              <button class="btn" id="btnRestart" title="Reiniciar (0)">⏮ Reiniciar</button>
+              <button class="btn" id="btnBack5" title="Retroceder 5s (J)">-5 s</button>
+              <button class="btn" id="btnFwd5" title="Avanzar 5s (L)">+5 s</button>
+              <div class="ctrl-sep"></div>
+              <button class="btn small" id="btnPrevFrame" title="Frame anterior (,)">◀ 1 frame</button>
+              <button class="btn small" id="btnNextFrame" title="Frame siguiente (.)">1 frame ▶</button>
+              <div class="ctrl-sep"></div>
+              <button class="btn danger-outline" id="btnPauseExplain">⏸ Pausar para explicar</button>
+            </div>
+            <div class="ctrl-row">
+              <span class="ctrl-label">Velocidad</span>
+              <button class="btn small speed-btn" data-speed="0.25">0.25×</button>
+              <button class="btn small speed-btn" data-speed="0.5">0.5×</button>
+              <button class="btn small speed-btn on" data-speed="1">1×</button>
+              <button class="btn small speed-btn" data-speed="1.5">1.5×</button>
+              <button class="btn small speed-btn" data-speed="2">2×</button>
+              <div class="ctrl-sep"></div>
+              <button class="btn small" id="btnLoop" title="Loop ON/OFF">Loop: OFF</button>
+              <button class="btn small" id="btnMute" title="Silenciar (M)">🔊 Audio: ON</button>
+            </div>
+            <div class="ctrl-row">
+              <span class="ctrl-label">Zoom</span>
+              <button class="btn small zoom-btn" data-zoom="1">1×</button>
+              <button class="btn small zoom-btn" data-zoom="1.5">1.5×</button>
+              <button class="btn small zoom-btn" data-zoom="2">2×</button>
+              <button class="btn small zoom-btn" data-zoom="3">3×</button>
+              <button class="btn small" id="btnResetZoom">Restablecer zoom</button>
+              <div class="ctrl-sep"></div>
+              <button class="btn small" id="btnExpandVideo">⛶ Ampliar video</button>
+              <button class="btn small" id="btnCapture">📷 Capturar imagen</button>
+            </div>
+          </div>
+
+          <div class="demo-mode-buttons">
+            <button class="btn primary" id="btnStartDemo">▶ INICIAR DEMOSTRACIÓN</button>
+            <button class="btn danger-outline" id="btnExitDemo" hidden>✕ VOLVER A PRESENTACIÓN</button>
+          </div>
+        </div>
+
+        <div class="demo-side-col" id="demoSideCol">
+          <div class="markers-panel">
+            <h3>Momentos clave</h3>
+            <div style="font-size:.86rem;line-height:1.42;color:var(--muted);margin:-4px 0 10px;">Evento observado en este caso: tipo <b style="color:var(--accent2);">"Roar"</b> — ruido de motor / escape (no bocina). Ver diapositiva "Localización acústica".</div>
+            <ul id="markersList"></ul>
+          </div>
+          <div class="desc-panel">
+            <h3>Qué observar</h3>
+            <div id="activeDescTitle">Inicio</div>
+            <p id="activeDesc">Seleccione un marcador o reproduzca el video para comenzar.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 ASOCIACION DEL VEHICULO -->
+    <section class="slide" id="slide-5" data-title="Asociación del vehículo">
+      <div class="eyebrow">Seguimiento</div>
+      <h1 class="slide-h1">Asociación del evento con el vehículo</h1>
+      <p class="slide-sub">Una vez calculada la localización acústica, el sistema mantiene identificado al vehículo mediante un recuadro de seguimiento (bounding box, recuadro delimitador), incluso en cuadros posteriores donde ya no se muestra la nube acústica.</p>
+      <div class="slide-body">
+        <div style="flex:0 0 46%;">
+          <div class="crop-box crop-tr lightbox-trigger" onclick="openLightbox('./Screen1.jpeg','Bounding box de seguimiento sobre el vehículo — segundo cuadro de la evidencia (Roar2).')">
+            <div class="crop-img"></div>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:16px;">
+          <div class="card">
+            <span class="badge badge-observed">Observado en demostración</span>
+            <ul class="bullet-list" style="margin-top:14px;">
+              <li><span class="dot"></span><span>La evidencia generada incluye dos cuadros del mismo evento, etiquetados internamente como <b>Roar1</b> y <b>Roar2</b> (evento tipo "Roar" — ruido de motor / escape; cuadro 1 y cuadro 2 de la misma captura).</span></li>
+              <li><span class="dot"></span>En ambos cuadros el vehículo aparece enmarcado con un recuadro rojo (bounding box).</li>
+              <li><span class="dot"></span>El número de patente y demás metadata se mantienen asociados al mismo vehículo en ambos cuadros.</li>
+            </ul>
+          </div>
+          <div class="kicker-note">Nota: en el video de la demostración (diapositiva anterior) el recuadro de seguimiento no es visible de forma continua; el elemento que sí se observa activarse en el video es el indicador de nube acústica. Esta imagen corresponde a la salida de evidencia generada por el sistema, no a la vista de video en vivo.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 RECONOCIMIENTO LPR -->
+    <section class="slide" id="slide-6" data-title="Reconocimiento LPR">
+      <div class="eyebrow">LPR (Reconocimiento Automático de Patentes)</div>
+      <h1 class="slide-h1">Reconocimiento automático de patente</h1>
+      <p class="slide-sub">El sistema recorta y amplía automáticamente la zona de la patente del vehículo asociado al evento, generando una imagen independiente de alta legibilidad.</p>
+      <div class="slide-body">
+        <div style="flex:0 0 42%;display:flex;align-items:flex-start;justify-content:center;">
+          <div class="plate-plaque lightbox-trigger" onclick="openLightbox('./PPU-screen.jpeg','Recorte de patente generado por el sistema LPR (resolución nativa de la captura).')">
+            <div class="plate-img-frame"><img src="./PPU-screen.jpeg"></div>
+            <div class="plate-number">7204</div>
+            <div class="plate-caption">Captura LPR · Resolución nativa</div>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:16px;">
+          <div class="card">
+            <span class="badge badge-confirmed">Confirmado por fabricante</span>
+            <p style="margin-top:12px;color:var(--muted);">Reconocimiento automático de placas patente (LPR — Reconocimiento Automático de Patentes), según Ficha Técnica del fabricante.</p>
+          </div>
+          <div class="card">
+            <span class="badge badge-observed">Observado en demostración</span>
+            <table class="meta-table" style="margin-top:12px;">
+              <tr><td>Número de patente leído</td><td><b>7204</b></td></tr>
+              <tr><td>Categoría</td><td>J</td></tr>
+              <tr><td>Tipo de patente</td><td>Private (particular)</td></tr>
+              <tr><td>Color de patente</td><td>White (blanca)</td></tr>
+              <tr><td>Tamaño de patente</td><td>Long (formato largo)</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 08 EVIDENCIA -->
+    <section class="slide" id="slide-7" data-title="Evidencia">
+      <div class="eyebrow">Salida del sistema</div>
+      <h1 class="slide-h1">Evidencia generada</h1>
+      <p class="slide-sub">Composición real de evidencia generada por el sistema para este evento: cuadros de detección, recorte del vehículo, recorte de patente, forma de onda del sonido y metadata asociada.</p>
+      <div class="slide-body">
+        <div style="flex:0 0 54%;display:flex;flex-direction:column;gap:10px;">
+          <div class="evidence-wrap show-annotations" id="evidenceWrap">
+            <img src="./Screen1.jpeg" class="lightbox-trigger" onclick="openLightbox('./Screen1.jpeg','Composición de evidencia generada por el sistema para el evento acústico detectado.')">
+            <div class="annot annot-box" style="left:18.3%;top:12.5%;width:11%;height:10%;"><span class="annot-tag">Vehículo / bounding box</span></div>
+            <div class="annot annot-dot" style="left:23%;top:19%;"></div>
+            <div class="annot annot-box" style="left:65%;top:9.5%;width:10.5%;height:11%;"><span class="annot-tag">Seguimiento (2do cuadro)</span></div>
+            <div class="annot annot-box" style="left:0%;top:45%;width:100%;height:4%;"><span class="annot-tag below">Metadata: fecha / hora / patente / decibel</span></div>
+            <div class="annot annot-box" style="left:76%;top:55%;width:17%;height:14%;"><span class="annot-tag">Patente (LPR)</span></div>
+            <div class="annot annot-box" style="left:50.3%;top:71%;width:49%;height:28%;"><span class="annot-tag below">Señal acústica</span></div>
+          </div>
+          <button class="btn small" id="btnToggleAnnot" style="align-self:flex-start;">Ocultar anotaciones</button>
+        </div>
+        <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;" class="scrollable">
+          <div class="card">
+            <span class="badge badge-observed">Metadata observada en la captura (texto literal, en inglés en el equipo — traducción agregada)</span>
+            <table class="meta-table" style="margin-top:12px;">
+              <tr><td>Violation Type (tipo de infracción)</td><td>Roar1 / Roar2 (ruido de motor/escape, cuadros 1 y 2)</td></tr>
+              <tr><td>Category (categoría)</td><td>J</td></tr>
+              <tr><td>Plate number (número de patente)</td><td>7204</td></tr>
+              <tr><td>Country / Region (país / región)</td><td>DXN</td></tr>
+              <tr><td>Plate type (tipo de patente)</td><td>Private (particular)</td></tr>
+              <tr><td>Plate color (color de patente)</td><td>White (blanca)</td></tr>
+              <tr><td>Plate size (tamaño de patente)</td><td>Long (formato largo)</td></tr>
+              <tr><td>Capture time (hora de captura)</td><td>2025-04-11 16:15:35</td></tr>
+              <tr><td>Decibel value (valor de decibeles mostrado)</td><td>0100db</td></tr>
+            </table>
+          </div>
+          <div class="kicker-note">El campo "Decibel Value" corresponde al texto mostrado en la propia captura de evidencia. No se cuenta con información que confirme que este valor provenga de una medición certificada en dB(A). El tipo de evento "Roar" indica ruido de motor o de escape (no bocina) — ver diapositiva "Localización acústica".</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 09 ARQUITECTURA -->
+    <section class="slide" id="slide-8" data-title="Arquitectura">
+      <div class="eyebrow">Componentes internos</div>
+      <h1 class="slide-h1">Arquitectura del sistema</h1>
+      <p class="slide-sub">Según la Ficha Técnica del fabricante, el equipo integra en un mismo cuerpo la captura de imagen, el análisis acústico y la analítica vehicular.</p>
+      <div class="slide-body">
+        <div class="grid-2" style="flex:1;">
+          <div class="cap-item"><div class="icon">📷</div><div class="cap-text"><span class="t">Sensor de imagen</span><span class="d">Alta resolución, 9 MP, sensor de 1" (GMOS).</span></div></div>
+          <div class="cap-item"><div class="icon">🔭</div><div class="cap-text"><span class="t">Sistema óptico</span><span class="d">Lente dedicado de 25 mm, apertura F1.4, enfoque automático.</span></div></div>
+          <div class="cap-item"><div class="icon">🧠</div><div class="cap-text"><span class="t">Procesamiento</span><span class="d">Procesador integrado para análisis de video y audio en tiempo real.</span></div></div>
+          <div class="cap-item"><div class="icon">🎙️</div><div class="cap-text"><span class="t">Módulo acústico</span><span class="d">Módulo de procesamiento dedicado a la detección acústica y analítica vehicular.</span></div></div>
+          <div class="cap-item"><div class="icon">🏷️</div><div class="cap-text"><span class="t">Analítica vehicular</span><span class="d">Detección, seguimiento y reconocimiento de patente (LPR) sobre el mismo flujo de video.</span></div></div>
+          <div class="cap-item"><div class="icon">📤</div><div class="cap-text"><span class="t">Salida de evidencia</span><span class="d">Generación de video, audio y metadata asociada al evento detectado.</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 CARACTERISTICAS -->
+    <section class="slide" id="slide-9" data-title="Características">
+      <div class="eyebrow">Especificaciones</div>
+      <h1 class="slide-h1">Características técnicas</h1>
+      <p class="slide-sub">Dimensiones, protección y prestaciones de video según la Ficha Técnica del fabricante (modelo iDS-TCI903-FIV).</p>
+      <div class="slide-body">
+        <div style="flex:0 0 38%;display:flex;align-items:flex-start;justify-content:center;">
+          <div class="img-frame lightbox-trigger" style="width:100%;background:#fff;" onclick="openLightbox('./iDS-TCI903-FIV_Dimensionsimage_1.png','Plano de dimensiones mecánicas del equipo — documentación del fabricante.')">
+            <img src="./iDS-TCI903-FIV_Dimensionsimage_1.png" style="width:100%;display:block;">
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:14px;" class="scrollable">
+          <div class="grid-2">
+            <div class="cap-item"><div class="icon">📐</div><div class="cap-text"><span class="t">Dimensiones</span><span class="d">369 × 383 × 113.5 mm aprox.</span></div></div>
+            <div class="cap-item"><div class="icon">⚖️</div><div class="cap-text"><span class="t">Peso</span><span class="d">Aproximadamente 6 kg</span></div></div>
+            <div class="cap-item"><div class="icon">🧱</div><div class="cap-text"><span class="t">Material</span><span class="d">Aleación de aluminio de alta resistencia</span></div></div>
+            <div class="cap-item"><div class="icon">🛡️</div><div class="cap-text"><span class="t">Protección</span><span class="d">IP55, contra sobretensiones eléctricas</span></div></div>
+            <div class="cap-item"><div class="icon">🌡️</div><div class="cap-text"><span class="t">Rango de temperatura</span><span class="d">-30 °C a 60 °C</span></div></div>
+            <div class="cap-item"><div class="icon">💧</div><div class="cap-text"><span class="t">Humedad</span><span class="d">Hasta 95% sin condensación</span></div></div>
+            <div class="cap-item"><div class="icon">🎞️</div><div class="cap-text"><span class="t">Compresión</span><span class="d">H.265 / H.264</span></div></div>
+            <div class="cap-item"><div class="icon">🖼️</div><div class="cap-text"><span class="t">Resolución de video</span><span class="d">Hasta 4K (4096 × 2160)</span></div></div>
+            <div class="cap-item"><div class="icon">🌗</div><div class="cap-text"><span class="t">WDR (Wide Dynamic Range — amplio rango dinámico)</span><span class="d">60 dB</span></div></div>
+            <div class="cap-item"><div class="icon">🔐</div><div class="cap-text"><span class="t">Seguridad</span><span class="d">Autenticación, cifrado HTTPS</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11 INTEGRACION -->
+    <section class="slide" id="slide-10" data-title="Integración">
+      <div class="eyebrow">Conectividad</div>
+      <h1 class="slide-h1">Integración y comunicación</h1>
+      <p class="slide-sub">El equipo está pensado para integrarse con plataformas de video (VMS — Video Management System, sistema de gestión de video) y sistemas de gestión de tránsito de terceros.</p>
+      <div class="slide-body">
+        <div class="grid-2" style="flex:1;">
+          <div class="cap-item"><div class="icon">🌐</div><div class="cap-text"><span class="t">Red</span><span class="d">Ethernet RJ45, 10/100/1000 Mbps</span></div></div>
+          <div class="cap-item"><div class="icon">📡</div><div class="cap-text"><span class="t">Protocolos</span><span class="d">TCP/IP, HTTP, HTTPS, RTSP, NTP, IPv6</span></div></div>
+          <div class="cap-item"><div class="icon">🧩</div><div class="cap-text"><span class="t">ONVIF (estándar abierto de interoperabilidad para cámaras IP)</span><span class="d">Compatible con perfiles S y G</span></div></div>
+          <div class="cap-item"><div class="icon">🛠️</div><div class="cap-text"><span class="t">ISAPI (API propietaria del fabricante) / SDK (kit de desarrollo de software)</span><span class="d">Para integración avanzada</span></div></div>
+          <div class="cap-item"><div class="icon">🔔</div><div class="cap-text"><span class="t">Entradas / salidas de alarma</span><span class="d">1 entrada / 6 salidas</span></div></div>
+          <div class="cap-item"><div class="icon">🔌</div><div class="cap-text"><span class="t">Comunicación serial</span><span class="d">RS-485 y RS-232</span></div></div>
+          <div class="cap-item"><div class="icon">🖥️</div><div class="cap-text"><span class="t">Integración VMS (sistema de gestión de video)</span><span class="d">Compatible con sistemas de gestión de video, ej. Genetec</span></div></div>
+          <div class="cap-item"><div class="icon">🏢</div><div class="cap-text"><span class="t">Plataformas propias</span><span class="d">Posibilidad de integración con plataformas propias (ej. Bramal)</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12 CAPACIDADES CONFIRMADAS -->
+    <section class="slide" id="slide-11" data-title="Capacidades confirmadas">
+      <div class="eyebrow"><span class="badge badge-confirmed">Confirmado por fabricante</span></div>
+      <h1 class="slide-h1">Capacidades confirmadas</h1>
+      <p class="slide-sub">Funcionalidades documentadas en la Ficha Técnica del fabricante y/o observadas directamente en la demostración en video.</p>
+      <div class="slide-body">
+        <div class="grid-3 scrollable" style="flex:1;align-content:start;">
+          <div class="cap-item"><div class="icon">✅</div><div class="cap-text"><span class="t">Whistle Detection (detección de bocina)</span><span class="d">Detección de bocinas mediante análisis acústico</span></div></div>
+          <div class="cap-item"><div class="icon">✅</div><div class="cap-text"><span class="t">Detección de ruido de motor / escape</span><span class="d">Evento "Roar", observado y localizado directamente en la demostración</span></div></div>
+          <div class="cap-item"><div class="icon">✅</div><div class="cap-text"><span class="t">Posicionamiento del evento acústico</span><span class="d">Asociado al vehículo en la vía, tanto para bocina como para motor/escape</span></div></div>
+          <div class="cap-item"><div class="icon">✅</div><div class="cap-text"><span class="t">Información de coordenadas</span><span class="d">Del evento detectado</span></div></div>
+          <div class="cap-item"><div class="icon">✅</div><div class="cap-text"><span class="t">Hasta 3 carriles</span><span class="d">Monitoreo simultáneo de hasta 3 pistas</span></div></div>
+          <div class="cap-item"><div class="icon">✅</div><div class="cap-text"><span class="t">LPR (Reconocimiento Automático de Patentes)</span><span class="d">Reconocimiento automático de patente</span></div></div>
+          <div class="cap-item"><div class="icon">✅</div><div class="cap-text"><span class="t">Whistle Cloud (nube acústica)</span><span class="d">Visualización de la localización acústica</span></div></div>
+          <div class="cap-item"><div class="icon">✅</div><div class="cap-text"><span class="t">Video / audio</span><span class="d">Captura y generación de evidencia audiovisual</span></div></div>
+          <div class="cap-item"><div class="icon">✅</div><div class="cap-text"><span class="t">ONVIF (estándar de interoperabilidad IP)</span><span class="d">Perfiles S y G</span></div></div>
+          <div class="cap-item"><div class="icon">✅</div><div class="cap-text"><span class="t">ISAPI (API propietaria)</span><span class="d">API propietaria del fabricante</span></div></div>
+          <div class="cap-item"><div class="icon">✅</div><div class="cap-text"><span class="t">SDK (kit de desarrollo de software)</span><span class="d">Para integración avanzada</span></div></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <span class="badge badge-observed">Confirmado por demostración directa</span>
+        <p style="margin-top:10px;line-height:1.5;">La demostración en video muestra, cuadro a cuadro, al sistema detectando y localizando un evento acústico de <b>ruido de motor / escape</b> (clasificado internamente como <b>"Roar"</b>, distinto de "Whistle"/bocina), asociándolo correctamente al vehículo en la vía. Es decir: el sistema detecta este tipo de evento, no solo bocinas. Lo que queda pendiente de documentación es el detalle fino de esa clasificación (criterios exactos, subtipos).</p>
+      </div>
+      <div class="kicker-note" style="margin-top:10px;">El video de esta demostración no contiene pista de audio; la capacidad de audio se documenta según especificación del fabricante, no como observación directa de este clip.</div>
+    </section>
+
+    <!-- 14 PRUEBA PILOTO -->
+    <section class="slide" id="slide-13" data-title="Prueba piloto">
+      <div class="eyebrow">Propuesta</div>
+      <h1 class="slide-h1">Prueba piloto</h1>
+      <p class="slide-sub">Parámetros de referencia documentados por el fabricante para la instalación, y una propuesta general de piloto para validar el sistema en condiciones reales.</p>
+      <div class="slide-body" style="align-items:flex-start;">
+        <div class="grid-2" style="flex:1;">
+          <div class="card">
+            <span class="badge badge-observed">Parámetros de referencia (guía del fabricante)</span>
+            <ul class="bullet-list" style="margin-top:14px;">
+              <li><span class="dot"></span>Altura de poste de referencia: 6 m</li>
+              <li><span class="dot"></span>Rango de detección: 10 m a 50 m desde el poste</li>
+              <li><span class="dot"></span>Monitoreo de hasta 3 carriles por equipo</li>
+            </ul>
+          </div>
+          <div class="card">
+            <span class="badge badge-observed">Propuesta de piloto (a definir con el cliente)</span>
+            <ul class="bullet-list" style="margin-top:14px;">
+              <li><span class="dot"></span>Selección de un punto de instalación representativo (corredor con tránsito mixto)</li>
+              <li><span class="dot"></span>Instalación conforme a los parámetros de referencia del fabricante</li>
+              <li><span class="dot"></span>Período de observación acordado con el cliente</li>
+              <li><span class="dot"></span>Contraste de eventos detectados contra observación manual en sitio</li>
+              <li><span class="dot"></span>Revisión específica de clasificación detallada, medición certificada dB(A), umbral normativo e integración de API</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 15 CONCLUSION -->
+    <section class="slide" id="slide-14" data-title="Conclusión">
+      <div class="eyebrow">Cierre</div>
+      <h1 class="slide-h1">Conclusión</h1>
+      <p class="slide-sub">La cámara iDS-TCI903-FIV combina captura de video de alta resolución, detección acústica y reconocimiento de patente en un solo equipo, generando evidencia objetiva para la gestión y fiscalización del ruido vehicular.</p>
+      <div class="slide-body" style="align-items:flex-start;">
+        <div class="equal-row">
+          <div class="card" style="flex:1;">
+            <ul class="bullet-list">
+              <li><span class="dot"></span><span>Detección y localización de eventos acústicos vehiculares —bocina y ruido de motor/escape ("Roar")—, con asociación automática al vehículo.</span></li>
+              <li><span class="dot"></span><span>Generación de evidencia (video, imagen, metadata) lista para revisión posterior.</span></li>
+              <li><span class="dot"></span><span>Integración estándar (ONVIF — interoperabilidad; ISAPI — API propietaria; SDK — kit de desarrollo) con plataformas de gestión existentes.</span></li>
+              <li><span class="dot"></span><span>Aspectos de clasificación avanzada y medición normativa certificada quedan pendientes de validación.</span></li>
+              <li><span class="dot"></span><span><b>Este análisis puede adaptarse</b> a los requerimientos específicos del cliente: sitio de instalación, tipo de evento a priorizar (bocina, motor, escape) e integraciones.</span></li>
+            </ul>
+          </div>
+          <div class="contact-card" style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+            <div class="contact-card-plaque"><img src="./bramal-logo.png" alt="Bramal"></div>
+            <div class="ctrl-label" style="margin:20px 0 10px;">Contacto</div>
+            <div class="contact-row"><span class="contact-icon">🏢</span><span>Bramal Tecnología, Ingeniería y Construcción</span></div>
+            <div class="contact-row"><span class="contact-icon">✉️</span><span>ventas@bramal.cl</span></div>
+            <div class="contact-row"><span class="contact-icon">📞</span><span>+569 9373 6008</span></div>
+            <div class="contact-row"><span class="contact-icon">🌐</span><span>www.bramal.cl</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div id="progressBar"></div>
+  <div id="slideCounter">1 / 16</div>
+
+  <div id="presenterPanel" hidden>
+    <div class="p-row"><span class="p-label">Diapositiva</span> <b id="presSlideNum">1 / 16</b></div>
+    <div class="p-row"><span class="p-label">Tiempo</span> <b id="presTime">00:00</b></div>
+    <div class="p-row"><span class="p-label">Sección</span> <b id="presSection">—</b></div>
+    <div class="p-row"><span class="p-label">Siguiente</span> <b id="presNext">—</b></div>
+  </div>
+
+  <div id="lightbox" hidden>
+    <button class="lb-close" onclick="closeLightbox()">✕</button>
+    <img id="lightboxImg" src="" alt="">
+    <div class="lb-caption" id="lightboxCaption"></div>
+  </div>
+
+  <div id="captureModal" hidden>
+    <button class="lb-close" onclick="closeCaptureModal()">✕</button>
+    <img id="captureImg" src="" alt="Frame capturado">
+    <div class="cap-hint">Frame capturado del video — puede permanecer abierto durante la explicación.</div>
+  </div>
+  <canvas id="captureCanvas" style="display:none;"></canvas>
+
+</div>
+
+<script>
+/* ============ SLIDE DATA / NAV ============ */
+const titles = [
+  "Introducción","Problema","Marco normativo","Oportunidad municipal","Solución","Localización acústica","Demostración del sistema",
+  "Asociación del vehículo","Reconocimiento LPR","Evidencia","Arquitectura","Características",
+  "Integración","Capacidades confirmadas","Prueba piloto","Conclusión"
+];
+const slides = Array.from(document.querySelectorAll('.slide'));
+const totalSlides = slides.length;
+let currentSlide = 0;
+const DEMO_SLIDE_INDEX = 6;
+
+const sbList = document.getElementById('sbList');
+titles.forEach((t,i) => {
+  const item = document.createElement('div');
+  item.className = 'sb-item' + (i===0 ? ' active':'');
+  item.innerHTML = '<span class="num">' + String(i+1).padStart(2,'0') + '</span><span>' + t + '</span>';
+  item.onclick = () => goToSlide(i);
+  sbList.appendChild(item);
+});
+const sbItems = Array.from(document.querySelectorAll('.sb-item'));
+
+function goToSlide(i){
+  i = Math.max(0, Math.min(totalSlides-1, i));
+  if(i === currentSlide) return;
+  slides[currentSlide].classList.remove('active');
+  currentSlide = i;
+  slides[currentSlide].classList.add('active');
+  sbItems.forEach((el,idx) => el.classList.toggle('active', idx===currentSlide));
+  document.getElementById('progressBar').style.width = ((currentSlide+1)/totalSlides*100) + '%';
+  document.getElementById('slideCounter').textContent = (currentSlide+1) + ' / ' + totalSlides;
+  updatePresenter();
+  if(currentSlide !== DEMO_SLIDE_INDEX){
+    const v = document.getElementById('demoVideo');
+    if(v && !v.paused) v.pause();
+    if(document.body.classList.contains('demo-mode')) exitDemoMode();
+  }
+}
+function nextSlide(){ goToSlide(currentSlide+1); }
+function prevSlide(){ goToSlide(currentSlide-1); }
+
+document.getElementById('progressBar').style.width = (100/totalSlides) + '%';
+
+/* ============ SIDEBAR TOGGLE ============ */
+const sidebar = document.getElementById('sidebar');
+document.getElementById('btnToggleSidebar').onclick = () => sidebar.classList.toggle('open');
+
+/* ============ VIDEO EVENTS / MARKERS ============ */
+const events = [
+  { time: 0.0, label: "Inicio", desc: "Vista general de la escena monitoreada: una vía de varios carriles, sin vehículos presentes. Es el estado de reposo de la cámara antes del evento." },
+  { time: 4.9, label: "Aparición del vehículo", desc: "Ingresa al encuadre, por el carril inferior derecho, el vehículo deportivo que segundos después queda asociado al evento acústico (patente 7204 según la evidencia generada)." },
+  { time: 6.1, label: "Nube acústica (Whistle Cloud)", desc: "Sobre la parte trasera del vehículo se activa un indicador visual circular tipo mapa de calor: es la localización del evento acústico detectado por el sistema, clasificado en la evidencia como \"Roar\" (ruido de motor o de escape, no bocina)." },
+  { time: 7.2, label: "Segunda activación acústica", desc: "El indicador de detección acústica se enciende una segunda vez mientras el vehículo continúa su trayecto, reforzando la asociación del evento \"Roar\" (motor/escape) con este vehículo específico." },
+  { time: 8.0, label: "Vehículo fuera de cuadro", desc: "El vehículo abandona el área monitoreada por la cámara. Con esta secuencia el sistema genera la evidencia mostrada en la diapositiva Evidencia." },
+  { time: 12.6, label: "Tráfico adicional (sin evento)", desc: "Otros vehículos (un sedán y una camioneta) transitan por la misma vía sin que se active ningún indicador acústico, lo que muestra que la detección responde a un evento sonoro puntual y no a la sola presencia de un vehículo." }
+];
+
+const video = document.getElementById('demoVideo');
+const markersList = document.getElementById('markersList');
+const progressMarkers = document.getElementById('progressMarkers');
+let lastActiveIdx = -1;
+
+function fmtTime(t){
+  if(!isFinite(t) || t<0) t = 0;
+  const m = Math.floor(t/60);
+  const s = Math.floor(t%60);
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+events.forEach((ev, idx) => {
+  const li = document.createElement('li');
+  li.className = 'marker-item';
+  li.dataset.idx = idx;
+  li.innerHTML = '<div class="m-left"><span class="m-dot"></span><span class="m-label">'+ev.label+'</span></div><span class="m-time">'+fmtTime(ev.time)+'</span>';
+  li.onclick = () => jumpToEvent(ev.time);
+  markersList.appendChild(li);
+});
+
+function renderMarkersActive(idx){
+  Array.from(markersList.children).forEach((li,i) => li.classList.toggle('active', i===idx));
+}
+
+function updateActiveMarker(){
+  const t = video.currentTime;
+  let idx = 0;
+  for(let i=0;i<events.length;i++){ if(t >= events[i].time) idx = i; }
+  if(idx !== lastActiveIdx){
+    lastActiveIdx = idx;
+    renderMarkersActive(idx);
+    document.getElementById('activeDescTitle').textContent = events[idx].label;
+    document.getElementById('activeDesc').textContent = events[idx].desc;
+  }
+}
+
+function jumpToEvent(seconds){
+  video.currentTime = seconds;
+  video.play();
+}
+
+/* draw marker ticks on progress bar once duration known */
+function drawProgressMarkers(){
+  if(!isFinite(video.duration) || video.duration<=0) return;
+  progressMarkers.innerHTML = '';
+  events.forEach(ev => {
+    const tick = document.createElement('div');
+    tick.className = 'progress-marker-tick';
+    tick.style.left = (ev.time / video.duration * 100) + '%';
+    tick.title = ev.label + ' — ' + fmtTime(ev.time);
+    progressMarkers.appendChild(tick);
+  });
+}
+
+/* ============ PLAYBACK CONTROLS ============ */
+const btnPlay = document.getElementById('btnPlay');
+function togglePlay(){
+  if(video.paused){ video.play(); } else { video.pause(); }
+}
+function updatePlayBtn(){
+  btnPlay.innerHTML = video.paused ? '&#9654; Reproducir' : '&#10074;&#10074; Pausar';
+}
+btnPlay.onclick = togglePlay;
+video.addEventListener('play', updatePlayBtn);
+video.addEventListener('pause', updatePlayBtn);
+
+document.getElementById('btnRestart').onclick = () => { video.currentTime = 0; };
+document.getElementById('btnPauseExplain').onclick = () => { video.pause(); };
+
+function seek(delta){
+  video.currentTime = Math.max(0, Math.min(video.duration||0, video.currentTime + delta));
+}
+document.getElementById('btnBack5').onclick = () => seek(-5);
+document.getElementById('btnFwd5').onclick = () => seek(5);
+
+/* Frame step: real FPS determined via offline analysis of Video.mp4 (OpenCV).
+   Browsers expose no reliable API to read container frame rate at runtime,
+   so we use the measured value here and fall back to 1/25s if unavailable. */
+const KNOWN_FPS = 9.9698596373002;
+const FRAME_STEP = KNOWN_FPS > 0 ? (1 / KNOWN_FPS) : (1/25);
+function previousFrame(){ video.pause(); video.currentTime = Math.max(0, video.currentTime - FRAME_STEP); }
+function nextFrame(){ video.pause(); video.currentTime = Math.min(video.duration||0, video.currentTime + FRAME_STEP); }
+document.getElementById('btnPrevFrame').onclick = previousFrame;
+document.getElementById('btnNextFrame').onclick = nextFrame;
+
+/* Speed */
+function setSpeed(v){
+  video.playbackRate = v;
+  document.querySelectorAll('.speed-btn').forEach(b => b.classList.toggle('on', parseFloat(b.dataset.speed) === v));
+}
+document.querySelectorAll('.speed-btn').forEach(b => b.onclick = () => setSpeed(parseFloat(b.dataset.speed)));
+
+/* Loop */
+const btnLoop = document.getElementById('btnLoop');
+btnLoop.onclick = () => {
+  video.loop = !video.loop;
+  btnLoop.textContent = 'Loop: ' + (video.loop ? 'ON' : 'OFF');
+  btnLoop.classList.toggle('on', video.loop);
+};
+
+/* Mute */
+const btnMute = document.getElementById('btnMute');
+function toggleMute(){
+  video.muted = !video.muted;
+  btnMute.textContent = (video.muted ? '🔇 Audio: OFF' : '🔊 Audio: ON');
+  btnMute.classList.toggle('on', !video.muted);
+}
+btnMute.onclick = toggleMute;
+
+/* Progress bar */
+const progressTrack = document.getElementById('progressTrack');
+const progressFill = document.getElementById('progressFill');
+const timeLabel = document.getElementById('timeLabel');
+function updateProgressUI(){
+  const dur = video.duration || 0;
+  const pct = dur>0 ? (video.currentTime/dur*100) : 0;
+  progressFill.style.width = pct + '%';
+  timeLabel.textContent = fmtTime(video.currentTime) + ' / ' + fmtTime(dur);
+}
+progressTrack.addEventListener('click', (e) => {
+  const rect = progressTrack.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  if(isFinite(video.duration)) video.currentTime = ratio * video.duration;
+});
+video.addEventListener('timeupdate', () => { updateProgressUI(); updateActiveMarker(); });
+video.addEventListener('loadedmetadata', () => { updateProgressUI(); drawProgressMarkers(); });
+
+/* ============ ZOOM + DRAG ============ */
+const videoZoomWrap = document.getElementById('videoZoomWrap');
+let zoomLevel = 1, panX = 0, panY = 0, dragging = false, dragStartX = 0, dragStartY = 0;
+
+function applyZoomTransform(){
+  videoZoomWrap.style.transform = 'scale(' + zoomLevel + ') translate(' + panX + 'px,' + panY + 'px)';
+  videoZoomWrap.classList.toggle('zoomed', zoomLevel > 1);
+  document.querySelectorAll('.zoom-btn').forEach(b => b.classList.toggle('on', parseFloat(b.dataset.zoom) === zoomLevel));
+}
+function setZoom(level){ zoomLevel = level; if(level===1){ panX=0; panY=0; } applyZoomTransform(); }
+function resetZoom(){ zoomLevel = 1; panX = 0; panY = 0; applyZoomTransform(); }
+function cycleZoom(){
+  const levels = [1,1.5,2,3];
+  let idx = levels.indexOf(zoomLevel);
+  idx = (idx + 1) % levels.length;
+  setZoom(levels[idx]);
+}
+document.querySelectorAll('.zoom-btn').forEach(b => b.onclick = () => setZoom(parseFloat(b.dataset.zoom)));
+document.getElementById('btnResetZoom').onclick = resetZoom;
+setZoom(1);
+
+videoZoomWrap.addEventListener('mousedown', (e) => {
+  if(zoomLevel <= 1) return;
+  dragging = true;
+  videoZoomWrap.classList.add('dragging');
+  dragStartX = e.clientX - panX*zoomLevel;
+  dragStartY = e.clientY - panY*zoomLevel;
+});
+window.addEventListener('mousemove', (e) => {
+  if(!dragging) return;
+  panX = (e.clientX - dragStartX) / zoomLevel;
+  panY = (e.clientY - dragStartY) / zoomLevel;
+  applyZoomTransform();
+});
+window.addEventListener('mouseup', () => { dragging = false; videoZoomWrap.classList.remove('dragging'); });
+
+/* ============ FULLSCREEN (video level) ============ */
+document.getElementById('btnVideoFullscreen').onclick = fullscreenVideo;
+function fullscreenVideo(){
+  const stage = document.getElementById('videoStage');
+  const req = stage.requestFullscreen || stage.webkitRequestFullscreen || stage.msRequestFullscreen;
+  if(req) req.call(stage);
+}
+
+/* In-page enlarge (level 1) */
+document.getElementById('btnExpandVideo').onclick = () => {
+  document.getElementById('demoLayout').classList.toggle('video-expanded');
+};
+
+/* ============ MODO DEMOSTRACIÓN ============ */
+function startDemoMode(){
+  document.querySelectorAll('video').forEach(v => { if(v !== video) v.pause(); });
+  video.pause();
+  video.currentTime = 0;
+  document.body.classList.add('demo-mode');
+  document.getElementById('btnStartDemo').hidden = true;
+  document.getElementById('btnExitDemo').hidden = false;
+  video.play();
+}
+function exitDemoMode(){
+  document.body.classList.remove('demo-mode');
+  document.getElementById('btnStartDemo').hidden = false;
+  document.getElementById('btnExitDemo').hidden = true;
+}
+document.getElementById('btnStartDemo').onclick = startDemoMode;
+document.getElementById('btnExitDemo').onclick = exitDemoMode;
+
+/* ============ FRAME CAPTURE ============ */
+const captureCanvas = document.getElementById('captureCanvas');
+document.getElementById('btnCapture').onclick = () => {
+  const w = video.videoWidth || 1248, h = video.videoHeight || 672;
+  captureCanvas.width = w; captureCanvas.height = h;
+  const ctx = captureCanvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, w, h);
+  document.getElementById('captureImg').src = captureCanvas.toDataURL('image/png');
+  document.getElementById('captureModal').hidden = false;
+};
+function closeCaptureModal(){ document.getElementById('captureModal').hidden = true; }
+
+/* ============ LIGHTBOX (images) ============ */
+function openLightbox(src, caption){
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightboxCaption').textContent = caption || '';
+  document.getElementById('lightbox').hidden = false;
+}
+function closeLightbox(){ document.getElementById('lightbox').hidden = true; }
+document.getElementById('lightbox').addEventListener('click', (e) => {
+  if(e.target.id === 'lightbox') closeLightbox();
+});
+
+/* ============ EVIDENCE ANNOTATIONS TOGGLE ============ */
+const evidenceWrap = document.getElementById('evidenceWrap');
+document.getElementById('btnToggleAnnot').onclick = (e) => {
+  evidenceWrap.classList.toggle('show-annotations');
+  const on = evidenceWrap.classList.contains('show-annotations');
+  e.target.textContent = on ? 'Ocultar anotaciones' : 'Mostrar anotaciones';
+};
+
+/* ============ PRESENTER MODE ============ */
+let presenterOn = false;
+const presenterStart = Date.now();
+function togglePresenterMode(){
+  presenterOn = !presenterOn;
+  document.getElementById('presenterPanel').hidden = !presenterOn;
+  if(presenterOn) updatePresenter();
+}
+function updatePresenter(){
+  document.getElementById('presSlideNum').textContent = (currentSlide+1) + ' / ' + totalSlides;
+  document.getElementById('presSection').textContent = titles[currentSlide];
+  document.getElementById('presNext').textContent = titles[currentSlide+1] || '—';
+}
+setInterval(() => {
+  if(!presenterOn) return;
+  const s = Math.floor((Date.now() - presenterStart)/1000);
+  const mm = String(Math.floor(s/60)).padStart(2,'0');
+  const ss = String(s%60).padStart(2,'0');
+  document.getElementById('presTime').textContent = mm + ':' + ss;
+}, 1000);
+
+/* ============ PRESENTATION FULLSCREEN ============ */
+function togglePresentationFullscreen(){
+  if(!document.fullscreenElement){
+    const req = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+    if(req) req.call(document.documentElement);
+  } else {
+    if(document.exitFullscreen) document.exitFullscreen();
+  }
+}
+
+/* ============ KEYBOARD SHORTCUTS ============ */
+document.addEventListener('keydown', (e) => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  if(tag === 'input' || tag === 'textarea') return;
+
+  const onDemoSlide = currentSlide === DEMO_SLIDE_INDEX;
+  const key = e.key;
+  const lowerKey = key.length === 1 ? key.toLowerCase() : key;
+
+  if(onDemoSlide){
+    switch(lowerKey){
+      case ' ': e.preventDefault(); togglePlay(); return;
+      case 'j': seek(-5); return;
+      case 'l': seek(5); return;
+      case 'k': togglePlay(); return;
+      case ',': previousFrame(); return;
+      case '.': nextFrame(); return;
+      case '0': video.currentTime = 0; return;
+      case '1': setSpeed(1); return;
+      case '2': setSpeed(0.5); return;
+      case '3': setSpeed(0.25); return;
+      case '4': setSpeed(1.5); return;
+      case '5': setSpeed(2); return;
+      case 'm': toggleMute(); return;
+      case 'z': cycleZoom(); return;
+    }
+  }
+
+  switch(key){
+    case 'ArrowRight': nextSlide(); break;
+    case 'ArrowLeft': prevSlide(); break;
+    case 'Escape':
+      closeLightbox();
+      closeCaptureModal();
+      if(document.body.classList.contains('demo-mode')) exitDemoMode();
+      break;
+    default:
+      if(lowerKey === 'f') togglePresentationFullscreen();
+      if(lowerKey === 'p') togglePresenterMode();
+  }
+});
+
+/* ============ INIT ============ */
+updatePresenter();
+document.getElementById('slideCounter').textContent = '1 / ' + totalSlides;
+</script>
+</body>
+</html>
