@@ -1814,6 +1814,7 @@ button {
 }
 
 .alert {
+  white-space: pre-line;
   padding: 12px 16px;
   border-radius: var(--radius-sm);
   font-size: 14px;
@@ -1923,4 +1924,57 @@ button {
 .facts-actions {
   display: grid;
   gap: 10px;
+}
+
+/* ---------- Usuarios del panel ---------- */
+.user-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: end;
+}
+
+@media (max-width: 760px) {
+  .user-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.user-rows {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+
+.user-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.user-row.is-disabled strong {
+  color: var(--text-faint);
+}
+
+.user-row strong {
+  font-weight: 500;
+  color: var(--graphite);
+}
+
+.user-row .meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.user-me {
+  color: var(--text-faint);
+  font-weight: 400;
 }

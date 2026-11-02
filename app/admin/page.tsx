@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { remove } from 'aws-amplify/storage';
 import { adminClient, assertOk, listAllProjects, revalidateSite } from '@/lib/admin-client';
 import { colorVars } from '@/lib/colors';
 import { coverUrl } from '@/lib/cover';
 import { isStoragePath } from '@/lib/media';
+import { organizeProject, pendingFiles, removeFolder, removePaths } from '@/lib/organize';
 import { seedProjects } from '@/lib/seed-data';
 import { byOrder, projectMedia, type Project } from '@/lib/types';
 
@@ -68,19 +68,33 @@ export default function AdminDashboard() {
     });
 
   const destroy = (p: Project) => {
-    if (!confirm(`¿Eliminar "${p.title}"? Esta acción no se puede deshacer.`)) return;
+    if (!confirm(`¿Eliminar "${p.title}" y todos sus archivos (carpeta proyectos/${p.slug}/)? Esta acción no se puede deshacer.`)) return;
     run(async () => {
       assertOk(await adminClient.models.Project.delete({ id: p.id }));
-      const paths = new Set<string>();
-      for (const m of projectMedia(p)) {
-        if (isStoragePath(m.src)) paths.add(m.src);
-        if (isStoragePath(m.poster)) paths.add(m.poster);
-      }
-      if (isStoragePath(p.coverImage)) paths.add(p.coverImage);
-      if (isStoragePath(p.datasheet)) paths.add(p.datasheet);
-      await Promise.allSettled([...paths].map((path) => remove({ path })));
-    }, 'Proyecto eliminado.');
+      // Se borra la carpeta completa del proyecto y cualquier archivo suyo que haya quedado fuera de ella.
+      const stray = [p.coverImage, p.datasheet, ...projectMedia(p).flatMap((m) => [m.src, m.poster])].filter(isStoragePath);
+      await Promise.all([removeFolder(p.slug), removePaths(stray)]);
+    }, 'Proyecto y archivos eliminados.');
   };
+
+  /** Copia a proyectos/<slug>/ los archivos que aún están fuera de la carpeta de cada proyecto. */
+  const organize = (targets: Project[]) =>
+    run(async () => {
+      const failures: string[] = [];
+      let moved = 0;
+      for (const [i, p] of targets.entries()) {
+        const res = await organizeProject(p, (done, total) =>
+          setNotice(`Organizando ${i + 1}/${targets.length}: ${p.title} (${done}/${total} archivos)…`),
+        );
+        moved += res.moved;
+        failures.push(...res.failed.map((f) => `${p.title}: ${f.url} (${f.error})`));
+      }
+      if (failures.length) {
+        throw new Error(`Se organizaron ${moved} archivos, pero ${failures.length} fallaron:\n${failures.join('\n')}`);
+      }
+    }, 'Archivos organizados en las carpetas de cada proyecto.');
+
+  const pendingTotal = (projects ?? []).reduce((n, p) => n + pendingFiles(p).length, 0);
 
   const importSeed = () =>
     run(async () => {
@@ -111,6 +125,16 @@ export default function AdminDashboard() {
           {projects && projects.length < seedProjects.length && (
             <button className="btn btn-ghost" onClick={importSeed} disabled={busy}>
               Importar proyectos del sitio actual
+            </button>
+          )}
+          {pendingTotal > 0 && (
+            <button
+              className="btn btn-ghost"
+              disabled={busy}
+              title="Copia al bucket los videos e imágenes que están en el sitio anterior, dentro de la carpeta de cada proyecto"
+              onClick={() => organize((projects ?? []).filter((p) => pendingFiles(p).length > 0))}
+            >
+              Organizar todo en S3 ({pendingTotal} archivos)
             </button>
           )}
           <Link href="/admin/proyectos/nuevo" className="btn btn-primary">
@@ -150,6 +174,9 @@ export default function AdminDashboard() {
                     {p.category && <span>· {p.category}</span>}
                     {p.featured && <span style={{ color: 'var(--accent-text)', fontWeight: 600 }}>· ★ Destacado</span>}
                     <span>· /{p.slug}</span>
+                    {pendingFiles(p).length > 0 && (
+                      <span style={{ color: 'var(--accent-text)' }}>· {pendingFiles(p).length} archivos fuera de su carpeta</span>
+                    )}
                   </div>
                 </div>
                 <div className="row-actions">
@@ -175,6 +202,16 @@ export default function AdminDashboard() {
                   <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => toggle(p, 'published')}>
                     {draft ? 'Publicar' : 'Ocultar'}
                   </button>
+                  {pendingFiles(p).length > 0 && (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      disabled={busy}
+                      title={`Copiar sus archivos a proyectos/${p.slug}/`}
+                      onClick={() => organize([p])}
+                    >
+                      Organizar en S3
+                    </button>
+                  )}
                   <Link href={`/admin/proyectos/${p.id}`} className="btn btn-ghost btn-sm">
                     Editar
                   </Link>

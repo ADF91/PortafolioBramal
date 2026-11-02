@@ -51,7 +51,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           </div>
           <div className="footer-bottom">
             <span>© {new Date().getFullYear()} Bramal. Todos los derechos reservados.</span>
-            <span>Mejorando ciudades</span>
+            <span>Diseñada por Antonio Donat Fuentes</span>
           </div>
         </div>
       </footer>

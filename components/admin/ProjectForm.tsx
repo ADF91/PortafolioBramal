@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { remove, uploadData } from 'aws-amplify/storage';
+import { useEffect, useRef, useState } from 'react';
+import { copy, uploadData } from 'aws-amplify/storage';
 import { adminClient, assertOk, listAllProjects, revalidateSite } from '@/lib/admin-client';
-import { isStoragePath, mediaUrl, slugify, uploadPath } from '@/lib/media';
+import { isStoragePath, mediaUrl, projectFolder, slugify, uploadPath } from '@/lib/media';
+import { copyFolder, removePaths } from '@/lib/organize';
 import { cleanList, projectMedia, specsToText, textToSpecs, type MediaItem, type Project } from '@/lib/types';
 
 type Upload = { id: string; name: string; progress: number; error?: string };
@@ -14,7 +15,6 @@ const VIDEO_EXT = /\.(mp4|webm|mov|m4v)(\?|#|$)/i;
 
 export default function ProjectForm({ project }: { project?: Project }) {
   const router = useRouter();
-  const folder = useMemo(() => project?.id ?? crypto.randomUUID(), [project?.id]);
 
   const [title, setTitle] = useState(project?.title ?? '');
   const [slug, setSlug] = useState(project?.slug ?? '');
@@ -63,9 +63,15 @@ export default function ProjectForm({ project }: { project?: Project }) {
   const uploading = uploads.some((u) => u.progress < 1 && !u.error);
 
   async function upload(file: File): Promise<string | null> {
+    // Los archivos se guardan en la carpeta del proyecto: proyectos/<slug>/<videos|imagenes|fichas>/
+    const target = slugify(slug || title);
+    if (!target) {
+      setError('Escribe el título del proyecto antes de subir archivos: se usa para nombrar su carpeta.');
+      return null;
+    }
     const id = crypto.randomUUID();
     setUploads((u) => [...u, { id, name: file.name, progress: 0 }]);
-    const path = uploadPath(folder, file);
+    const path = uploadPath(target, file);
     try {
       await uploadData({
         path,
@@ -164,6 +170,21 @@ export default function ProjectForm({ project }: { project?: Project }) {
         throw new Error(`Ya existe un proyecto con la URL "/${finalSlug}".`);
       }
 
+      // La carpeta del bucket sigue a la URL del proyecto: si cambió, se copian los archivos a la nueva.
+      const finalFolder = projectFolder(finalSlug);
+      const moved = new Map<string, string>();
+      if (project && project.slug !== finalSlug) {
+        for (const [from, to] of await copyFolder(project.slug, finalSlug)) moved.set(from, to);
+      }
+      const refs = [coverImage, datasheet, ...media.flatMap((m) => [m.src, m.poster])].filter(isStoragePath);
+      for (const ref of refs) {
+        if (ref.startsWith(finalFolder) || moved.has(ref)) continue;
+        const dest = finalFolder + ref.split('/').slice(2).join('/');
+        await copy({ source: { path: ref }, destination: { path: dest } });
+        moved.set(ref, dest);
+      }
+      const r = (s?: string | null) => (s ? moved.get(s) ?? s : s);
+
       const payload = {
         slug: finalSlug,
         title: title.trim(),
@@ -178,16 +199,16 @@ export default function ProjectForm({ project }: { project?: Project }) {
         model: model.trim() || null,
         applications: applications.split('\n').map((t) => t.trim()).filter(Boolean),
         specs: textToSpecs(specsText),
-        datasheet: datasheet.trim() || null,
+        datasheet: r(datasheet.trim()) || null,
         presentationUrl: presentationUrl.trim() || null,
         year: year ? Number.parseInt(year, 10) || null : null,
         published,
         featured,
-        coverImage: coverImage || null,
+        coverImage: r(coverImage) || null,
         media: media.map((m) => ({
           kind: m.kind,
-          src: m.src,
-          poster: m.poster || null,
+          src: r(m.src)!,
+          poster: r(m.poster) || null,
           caption: m.caption?.trim() || null,
         })),
       };
@@ -200,8 +221,9 @@ export default function ProjectForm({ project }: { project?: Project }) {
         assertOk(await adminClient.models.Project.create({ ...payload, sortOrder: all.length ? maxOrder + 10 : 0 }));
       }
 
-      const stillUsed = new Set([coverImage, datasheet, ...media.flatMap((m) => [m.src, m.poster])]);
-      await Promise.allSettled(removed.filter((p) => !stillUsed.has(p)).map((path) => remove({ path })));
+      // Limpieza: archivos quitados del proyecto y la copia antigua de los que se movieron de carpeta.
+      const stillUsed = new Set([payload.coverImage, payload.datasheet, ...payload.media.flatMap((m) => [m.src, m.poster])]);
+      await removePaths([...removed, ...moved.keys()].filter((p) => !stillUsed.has(p)));
       await revalidateSite();
       router.push('/admin');
       router.refresh();
