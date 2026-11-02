@@ -43,6 +43,9 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
               <h4>Empresa</h4>
               <Link href="/#nosotros">Nosotros</Link>
               <Link href="/#contacto">Contacto</Link>
+              <Link href="/admin" className="footer-admin" rel="nofollow">
+                Acceso equipo Bramal
+              </Link>
             </div>
             <div className="footer-col">
               <h4>Síganos</h4>
