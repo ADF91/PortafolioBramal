@@ -27,9 +27,27 @@ export function assertOk<T>(res: { data: T | null; errors?: { message: string }[
   return res.data;
 }
 
-/** Los resultados de las funciones (tipo AWSJSON) llegan como texto JSON. */
-function parseJson<T>(value: unknown): T {
-  return (typeof value === 'string' ? JSON.parse(value) : value) as T;
+/**
+ * Los resultados de las funciones (tipo AWSJSON) llegan como texto JSON, a veces codificado
+ * más de una vez; se decodifica hasta obtener el valor.
+ */
+function parseJson(value: unknown): unknown {
+  let out = value;
+  for (let i = 0; i < 3 && typeof out === 'string'; i++) {
+    try {
+      out = JSON.parse(out);
+    } catch {
+      break;
+    }
+  }
+  return out;
+}
+
+/** Igual que parseJson, pero exige una lista (evita errores si la respuesta tiene otra forma). */
+function parseList<T>(value: unknown, what: string): T[] {
+  const out = parseJson(value);
+  if (!Array.isArray(out)) throw new Error(`Respuesta inesperada al obtener ${what}.`);
+  return out as T[];
 }
 
 // ---------- Usuarios del panel ----------
@@ -51,7 +69,7 @@ export type PanelUser = {
 };
 
 export async function listPanelUsers(): Promise<PanelUser[]> {
-  return parseJson<PanelUser[]>(assertOk(await adminClient.queries.listUsers()));
+  return parseList<PanelUser>(assertOk(await adminClient.queries.listUsers()), 'los usuarios');
 }
 
 export async function manageUser(args: {
@@ -69,7 +87,8 @@ export type ImportItem = { url: string; path: string };
 export type ImportResult = ImportItem & { ok: boolean; error?: string };
 
 export async function importMedia(items: ImportItem[]): Promise<ImportResult[]> {
-  return parseJson<ImportResult[]>(assertOk(await adminClient.mutations.importMedia({ items: JSON.stringify(items) })));
+  const res = await adminClient.mutations.importMedia({ items: JSON.stringify(items) });
+  return parseList<ImportResult>(assertOk(res), 'el resultado de la copia');
 }
 
 /** Pide al servidor regenerar las páginas públicas para que los cambios se vean al instante. */

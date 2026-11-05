@@ -43,5 +43,5 @@ export const handler: Schema['importMedia']['functionHandler'] = async (event) =
   for (let i = 0; i < items.length; i += 2) {
     results.push(...(await Promise.all(items.slice(i, i + 2).map(copyOne))));
   }
-  return JSON.stringify(results);
+  return results;
 };

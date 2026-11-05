@@ -70,11 +70,11 @@ type Event = {
 
 /**
  * Punto de entrada único para `listUsers` y `manageUser`; AppSync indica la operación en info.fieldName.
- * Los resultados se devuelven como texto JSON (tipo AWSJSON).
+ * Los resultados se devuelven como objetos: AppSync los serializa al tipo AWSJSON.
  */
-export const handler = async (event: Event): Promise<string> => {
+export const handler = async (event: Event): Promise<unknown> => {
   const field = event.fieldName ?? event.info?.fieldName;
-  if (field === 'listUsers') return JSON.stringify(await listAll());
+  if (field === 'listUsers') return await listAll();
 
   const { action, email, username, role } = event.arguments ?? {};
   const caller = event.identity?.username;
@@ -100,25 +100,25 @@ export const handler = async (event: Event): Promise<string> => {
         }),
       );
       await setRole(res.User!.Username!, role);
-      return JSON.stringify(await describe(res.User!));
+      return await describe(res.User!);
     }
     case 'setRole': {
       if (!username || !isRole(role)) throw new Error('Usuario o rol inválido.');
       if (username === caller && role !== 'ADMINS') throw new Error('No puedes quitarte el rol de administrador.');
       await setRole(username, role);
-      return JSON.stringify({ ok: true });
+      return { ok: true };
     }
     case 'disable':
     case 'enable': {
       if (!username) throw new Error('Usuario inválido.');
       const Command = action === 'disable' ? AdminDisableUserCommand : AdminEnableUserCommand;
       await cognito.send(new Command({ UserPoolId, Username: username }));
-      return JSON.stringify({ ok: true });
+      return { ok: true };
     }
     case 'delete': {
       if (!username) throw new Error('Usuario inválido.');
       await cognito.send(new AdminDeleteUserCommand({ UserPoolId, Username: username }));
-      return JSON.stringify({ ok: true });
+      return { ok: true };
     }
     default:
       throw new Error(`Acción desconocida: ${action}`);
