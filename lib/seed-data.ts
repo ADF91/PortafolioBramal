@@ -209,6 +209,61 @@ export const seedProjects: SeedProject[] = [
     media: [{ kind: 'video', src: vid('Hurry+Call/20250724_154901_1_1.mp4'), poster: img('Proyectos/Hurry+Call.png') }],
   },
   {
+    slug: 'bramal-vision',
+    title: 'Bramal Vision',
+    tagline: 'Tránsito inteligente para su comuna',
+    summary:
+      'Solución que integra cámaras con inteligencia artificial en los semáforos, una plataforma central en la nube y un panel web de fácil uso, para entregar a la comuna información de tránsito en tiempo real con la cual fiscalizar, planificar y tomar mejores decisiones.',
+    description:
+      'En terreno, la inteligencia funciona junto a las cámaras: cuenta vehículos, peatones y ciclistas, detecta infracciones de velocidad y luz roja, y sigue operando sin internet, almacenando los registros para enviarlos después.\n\nLa plataforma central reúne todos los datos en un solo lugar: recibe y confirma cada registro, guarda el historial en la nube, incorpora un asistente de IA para hacer consultas en lenguaje natural y permite controlar y configurar los equipos a distancia.\n\nDesde la plataforma web, la comuna opera con un panel en tiempo real, filtros de conteo y análisis, informes ejecutivos en PDF y CSV, y la revisión de infracciones con evidencia fotográfica. La solución se integra con la UOCT mediante el envío automático y seguro de eventos, con información trazable y reintentos, lista para la operación municipal.',
+    category: 'Gestión de tránsito',
+    tags: ['Inteligencia artificial', 'Semáforos', 'Fiscalización', 'UOCT', 'Datos'],
+    highlights: [
+      'Conocer el flujo real de vehículos, peatones y ciclistas',
+      'Fiscalizar con evidencia: velocidad y luz roja',
+      'Decidir con datos de hoy, en un panel en tiempo real',
+      'Informar a la UOCT y a los vecinos con reportes y alertas',
+      'Crecer sin rehacer: se agregan nuevas ubicaciones',
+    ],
+    applications: [
+      'Fiscalización de velocidad y luz roja con evidencia fotográfica',
+      'Planificación de tránsito con conteos de vehículos, peatones y ciclistas',
+      'Reportes y alertas para la UOCT y los vecinos',
+      'Operación municipal de tránsito con datos en tiempo real',
+    ],
+    specs: specs({
+      'Equipo en terreno': [
+        ['Conteo', 'Vehículos, peatones y ciclistas'],
+        ['Infracciones', 'Velocidad y luz roja'],
+        ['Sin conexión', 'Almacena los registros y los envía luego'],
+      ],
+      'Plataforma central': [
+        ['Registros', 'Recibe y confirma cada registro'],
+        ['Historial', 'Almacenado en la nube'],
+        ['Asistente de IA', 'Consultas en lenguaje natural'],
+        ['Gestión remota', 'Control y configuración de equipos'],
+      ],
+      'Plataforma web': [
+        ['Panel', 'Tiempo real'],
+        ['Análisis', 'Filtros de conteo y análisis'],
+        ['Informes', 'Ejecutivos en PDF y CSV'],
+        ['Infracciones', 'Revisión con evidencia fotográfica'],
+      ],
+      'Integración UOCT': [
+        ['Envío de eventos', 'Automático y seguro'],
+        ['Trazabilidad', 'Información trazable y con reintentos'],
+      ],
+    }),
+    coverImage: '/media/bramal-vision/semaforos.jpg',
+    featured: true,
+    media: [
+      { kind: 'image', src: '/media/bramal-vision/semaforos.jpg', caption: 'Semáforos con cámara de inteligencia artificial integrada' },
+      { kind: 'image', src: '/media/bramal-vision/que-obtiene-la-comuna.jpg', caption: 'Qué obtiene la comuna' },
+      { kind: 'image', src: '/media/bramal-vision/como-lo-logramos.jpg', caption: 'Cómo lo logramos: equipo en terreno, plataforma central, plataforma web e integración con la UOCT' },
+      { kind: 'image', src: '/media/bramal-vision/infografia-bramal-vision.jpg', caption: 'Infografía completa' },
+    ],
+  },
+  {
     slug: 'camara-ia-deteccion-acustica',
     title: 'Cámara IA de Detección Acústica',
     tagline: 'Fiscalización inteligente del ruido vehicular',

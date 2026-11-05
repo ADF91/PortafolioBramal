@@ -96,12 +96,14 @@ export default function AdminDashboard() {
 
   const pendingTotal = (projects ?? []).reduce((n, p) => n + pendingFiles(p).length, 0);
 
+  // Proyectos incluidos en el código (lib/seed-data.ts) que aún no existen en la base de datos.
+  const missingSeeds = projects ? seedProjects.filter((s) => !projects.some((p) => p.slug === s.slug)) : [];
+
   const importSeed = () =>
     run(async () => {
-      const existing = new Set((projects ?? []).map((p) => p.slug));
-      let order = (projects?.length ?? 0) * 10;
-      for (const s of seedProjects) {
-        if (existing.has(s.slug)) continue;
+      // Los nuevos quedan al final del listado; los existentes no se modifican.
+      let order = (projects ?? []).reduce((max, p) => Math.max(max, p.sortOrder ?? 0), -10) + 10;
+      for (const s of missingSeeds) {
         assertOk(
           await adminClient.models.Project.create({
             ...s,
@@ -112,7 +114,7 @@ export default function AdminDashboard() {
         );
         order += 10;
       }
-    }, 'Proyectos del sitio actual importados.');
+    }, `Importado: ${missingSeeds.map((s) => s.title).join(', ')}.`);
 
   return (
     <>
@@ -122,9 +124,14 @@ export default function AdminDashboard() {
           <p>Crea, edita y ordena los proyectos que se muestran en el portafolio.</p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {projects && projects.length < seedProjects.length && (
-            <button className="btn btn-ghost" onClick={importSeed} disabled={busy}>
-              Importar proyectos del sitio actual
+          {missingSeeds.length > 0 && (
+            <button
+              className="btn btn-ghost"
+              onClick={importSeed}
+              disabled={busy}
+              title={`Agrega: ${missingSeeds.map((s) => s.title).join(', ')}`}
+            >
+              {projects?.length ? `Importar proyectos nuevos (${missingSeeds.length})` : 'Importar proyectos del sitio actual'}
             </button>
           )}
           {pendingTotal > 0 && (

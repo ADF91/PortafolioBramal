@@ -1112,3 +1112,9 @@ kbd {
 .s-project.long-title h2 {
   font-size: 46px;
 }
+
+/* Imágenes muy anchas (infografías, banners): completas sobre fondo grafito, sin recortar texto */
+.s-media > img.is-wide {
+  object-fit: contain;
+  padding: 0 24px;
+}

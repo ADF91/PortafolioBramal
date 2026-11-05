@@ -156,8 +156,14 @@ function ProjectSlide({
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img
+              key={current.src}
               src={mediaUrl(current.kind === 'video' ? current.poster || cover : current.src)}
               alt={current.caption || project.title}
+              // Banners e infografías (muy anchos) se muestran completos; las fotos llenan el espacio.
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                if (img.naturalWidth / img.naturalHeight > 1.9) img.classList.add('is-wide');
+              }}
             />
           ))}
         {items.length > 1 && (
