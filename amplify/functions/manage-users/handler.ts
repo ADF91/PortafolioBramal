@@ -60,9 +60,11 @@ async function setRole(Username: string, role: Role) {
 }
 
 type ManageArgs = Parameters<ManageHandler>[0]['arguments'];
+// Amplify entrega fieldName en la raíz del evento; el formato estándar de AppSync lo trae en info.fieldName.
 type Event = {
-  info: { fieldName: string };
-  arguments: Partial<ManageArgs>;
+  fieldName?: string;
+  info?: { fieldName?: string };
+  arguments?: Partial<ManageArgs> | null;
   identity?: { username?: string } | null;
 };
 
@@ -71,9 +73,10 @@ type Event = {
  * Los resultados se devuelven como texto JSON (tipo AWSJSON).
  */
 export const handler = async (event: Event): Promise<string> => {
-  if (event.info.fieldName === 'listUsers') return JSON.stringify(await listAll());
+  const field = event.fieldName ?? event.info?.fieldName;
+  if (field === 'listUsers') return JSON.stringify(await listAll());
 
-  const { action, email, username, role } = event.arguments;
+  const { action, email, username, role } = event.arguments ?? {};
   const caller = event.identity?.username;
 
   if (username && username === caller && action !== 'setRole') {
